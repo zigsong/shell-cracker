@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sea Otter Rhythm - 조개 깨기</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Jua&display=swap");
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Jua", sans-serif;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      .game-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* 배경 이미지 */
+      .background {
+        position: absolute;
+        inset: 0;
+        background: url("images/game_bg.png") center center / cover no-repeat;
+        z-index: 0;
+      }
+
+      /* 바다 물결 오버레이 */
+      .water-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          transparent 0%,
+          transparent 50%,
+          rgba(0, 100, 150, 0.1) 70%,
+          rgba(0, 150, 200, 0.15) 100%
+        );
+        z-index: 1;
+        animation: waterShimmer 3s ease-in-out infinite;
+      }
+
+      @keyframes waterShimmer {
+        0%,
+        100% {
+          opacity: 0.8;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      /* 수달 캐릭터 */
+      .otter-container {
+        position: absolute;
+        bottom: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .otter {
+        width: 400px;
+        height: auto;
+        filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
+        animation: bob 2s ease-in-out infinite;
+      }
+
+      /* 둥둥 떠다니는 애니메이션 */
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateX(-50%) translateY(0) rotate(-2deg);
+        }
+        25% {
+          transform: translateX(-48%) translateY(-15px) rotate(0deg);
+        }
+        50% {
+          transform: translateX(-50%) translateY(-8px) rotate(2deg);
+        }
+        75% {
+          transform: translateX(-52%) translateY(-20px) rotate(0deg);
+        }
+      }
+
+      @keyframes bob {
+        0%,
+        100% {
+          transform: scaleY(1);
+        }
+        50% {
+          transform: scaleY(0.98);
+        }
+      }
+
+      /* 물결 효과 */
+      .wave {
+        position: absolute;
+        bottom: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 350px;
+        height: 60px;
+        z-index: 5;
+      }
+
+      .wave-ring {
+        position: absolute;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        animation: ripple 2.5s ease-out infinite;
+      }
+
+      .wave-ring:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .wave-ring:nth-child(2) {
+        animation-delay: 0.8s;
+      }
+      .wave-ring:nth-child(3) {
+        animation-delay: 1.6s;
+      }
+
+      @keyframes ripple {
+        0% {
+          width: 100px;
+          height: 30px;
+          left: calc(50% - 50px);
+          top: 50%;
+          opacity: 0.6;
+        }
+        100% {
+          width: 300px;
+          height: 80px;
+          left: calc(50% - 150px);
+          top: 30%;
+          opacity: 0;
+        }
+      }
+
+      /* 타이틀 */
+      .title-container {
+        position: absolute;
+        top: 12%;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        z-index: 20;
+      }
+
+      .game-title {
+        font-family: "Press Start 2P", monospace;
+        font-size: 2rem;
+        color: #fff;
+        text-shadow:
+          4px 4px 0 #2980b9,
+          6px 6px 0 #1a5276,
+          0 0 30px rgba(52, 152, 219, 0.8),
+          0 0 60px rgba(52, 152, 219, 0.5);
+        margin-bottom: 15px;
+        animation: titlePulse 2s ease-in-out infinite;
+      }
+
+      .game-subtitle {
+        font-size: 1.5rem;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        letter-spacing: 2px;
+        white-space: nowrap;
+      }
+
+      @keyframes titlePulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.02);
+        }
+      }
+
+      /* 시작 버튼 */
+      .start-btn {
+        position: absolute;
+        top: 42%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 100;
+        padding: 25px 70px;
+        font-family: "Press Start 2P", monospace;
+        font-size: 1.2rem;
+        color: #fff;
+        background: transparent;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        animation: bounce 1s ease-in-out infinite;
+      }
+
+      .start-btn:hover {
+        transform: translate(-50%, -50%) translateY(-2px);
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+      }
+
+      .start-btn:active {
+        transform: translate(-50%, -50%) translateY(2px);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+      }
+
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) translateY(0);
+        }
+        50% {
+          transform: translate(-50%, -50%) translateY(-5px);
+        }
+      }
+
+      .start-btn.hidden {
+        display: none;
+      }
+
+      /* 음악 인디케이터 */
+      .music-indicator {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 25px;
+        color: #fff;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .music-indicator:hover {
+        background: rgba(0, 0, 0, 0.7);
+      }
+
+      .music-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 16px;
+      }
+
+      .music-bar {
+        width: 3px;
+        background: #3cdc8c;
+        border-radius: 2px;
+        animation: musicBar 0.8s ease-in-out infinite;
+      }
+
+      .music-bar:nth-child(1) {
+        height: 6px;
+        animation-delay: 0s;
+      }
+      .music-bar:nth-child(2) {
+        height: 10px;
+        animation-delay: 0.15s;
+      }
+      .music-bar:nth-child(3) {
+        height: 14px;
+        animation-delay: 0.3s;
+      }
+      .music-bar:nth-child(4) {
+        height: 8px;
+        animation-delay: 0.45s;
+      }
+
+      .music-indicator.paused .music-bar {
+        animation: none;
+        height: 4px;
+        opacity: 0.5;
+      }
+
+      @keyframes musicBar {
+        0%,
+        100% {
+          transform: scaleY(1);
+        }
+        50% {
+          transform: scaleY(0.4);
+        }
+      }
+
+      /* 물방울 효과 */
+      .bubble {
+        position: absolute;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(255, 255, 255, 0.8),
+          rgba(255, 255, 255, 0.1)
+        );
+        animation: rise linear infinite;
+        z-index: 2;
+      }
+
+      @keyframes rise {
+        0% {
+          transform: translateY(0) scale(1);
+          opacity: 0.6;
+        }
+        100% {
+          transform: translateY(-100vh) scale(0.5);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-container">
+      <!-- 배경 -->
+      <div class="background"></div>
+      <div class="water-overlay"></div>
+
+      <!-- 물방울들 (JS로 생성) -->
+      <div id="bubbles"></div>
+
+      <!-- 타이틀 -->
+      <div class="title-container">
+        <h1 class="game-title">SEA OTTER</h1>
+        <p class="game-subtitle">리듬에 맞춰 조개를 깨자!</p>
+      </div>
+
+      <!-- 수달 -->
+      <div class="otter-container">
+        <img src="images/main_otter.png" alt="Sea Otter" class="otter" />
+      </div>
+
+      <!-- 물결 효과 -->
+      <div class="wave">
+        <div class="wave-ring"></div>
+        <div class="wave-ring"></div>
+        <div class="wave-ring"></div>
+      </div>
+
+      <!-- 음악 인디케이터 -->
+      <div class="music-indicator paused" id="musicIndicator">
+        <div class="music-bars">
+          <div class="music-bar"></div>
+          <div class="music-bar"></div>
+          <div class="music-bar"></div>
+          <div class="music-bar"></div>
+        </div>
+      </div>
+
+      <!-- 시작 버튼 -->
+      <button class="start-btn" id="startBtn">START GAME</button>
+    </div>
+
+    <script src="js/bgm.js"></script>
+    <script>
+      // ─── 물방울 생성 ───
+      function createBubbles() {
+        const container = document.getElementById("bubbles");
+        for (let i = 0; i < 15; i++) {
+          const bubble = document.createElement("div");
+          bubble.className = "bubble";
+          const size = Math.random() * 15 + 5;
+          bubble.style.width = size + "px";
+          bubble.style.height = size + "px";
+          bubble.style.left = Math.random() * 100 + "%";
+          bubble.style.bottom = "-20px";
+          bubble.style.animationDuration = Math.random() * 5 + 5 + "s";
+          bubble.style.animationDelay = Math.random() * 5 + "s";
+          container.appendChild(bubble);
+        }
+      }
+      createBubbles();
+
+      // ─── 음악 UI 업데이트 ───
+      function updateMusicUI() {
+        const indicator = document.getElementById("musicIndicator");
+        if (BGM.playing) {
+          indicator.classList.remove("paused");
+        } else {
+          indicator.classList.add("paused");
+        }
+      }
+
+      // ─── 음악 인디케이터 클릭 (토글) ───
+      document
+        .getElementById("musicIndicator")
+        .addEventListener("click", async () => {
+          if (BGM.playing) {
+            BGM.pause();
+          } else {
+            await BGM.start();
+          }
+          updateMusicUI();
+        });
+
+      // ─── 시작 버튼 ───
+      document
+        .getElementById("startBtn")
+        .addEventListener("click", async () => {
+          await BGM.start();
+          updateMusicUI();
+          document.getElementById("startBtn").classList.add("hidden");
+        });
+    </script>
+  </body>
+</html>
