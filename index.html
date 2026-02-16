@@ -326,6 +326,173 @@
           opacity: 0;
         }
       }
+
+      /* ─── 인트로 → 게임 전환 ─── */
+      .intro-layer {
+        transition: opacity 0.6s ease;
+      }
+
+      .intro-layer.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* ─── 게임 화면 ─── */
+      .game-screen {
+        position: absolute;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+      }
+
+      .game-screen.active {
+        display: block;
+        opacity: 1;
+      }
+
+      /* 스프라이트 캐릭터 */
+      .sprite-character {
+        position: absolute;
+        bottom: 25%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 320px;
+        height: 167px;
+        background-image: url("images/sprite_success.png");
+        background-size: 640px 335px;
+        background-position: 0 0;
+        background-repeat: no-repeat;
+        image-rendering: auto;
+        filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
+        animation: characterFloat 3s ease-in-out infinite;
+      }
+
+      @keyframes characterFloat {
+        0%, 100% {
+          transform: translateX(-50%) translateY(0);
+        }
+        50% {
+          transform: translateX(-50%) translateY(-12px);
+        }
+      }
+
+      /* ─── 일시정지 버튼 ─── */
+      .pause-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 60;
+        width: 48px;
+        height: 48px;
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        transition: background 0.2s;
+      }
+
+      .pause-btn:hover {
+        background: rgba(0, 0, 0, 0.7);
+      }
+
+      .pause-btn .pause-bar {
+        width: 4px;
+        height: 18px;
+        background: #fff;
+        border-radius: 2px;
+      }
+
+      /* ─── 일시정지 모달 ─── */
+      .pause-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .pause-overlay.active {
+        display: flex;
+        opacity: 1;
+      }
+
+      .pause-modal {
+        background: rgba(10, 40, 70, 0.95);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 40px 50px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      }
+
+      .pause-overlay.active .pause-modal {
+        transform: scale(1);
+      }
+
+      .pause-modal h2 {
+        font-family: "Press Start 2P", monospace;
+        font-size: 1.2rem;
+        color: #fff;
+        margin-bottom: 35px;
+        text-shadow: 0 0 20px rgba(52, 152, 219, 0.8);
+      }
+
+      .pause-modal-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .pause-modal-btn {
+        padding: 15px 40px;
+        font-family: "Jua", sans-serif;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .pause-modal-btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .pause-modal-btn:active {
+        transform: translateY(1px);
+      }
+
+      .btn-home {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .btn-home:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .btn-resume {
+        background: #3498db;
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+      }
+
+      .btn-resume:hover {
+        background: #2980b9;
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
+      }
     </style>
   </head>
   <body>
@@ -337,22 +504,48 @@
       <!-- 물방울들 (JS로 생성) -->
       <div id="bubbles"></div>
 
-      <!-- 타이틀 -->
-      <div class="title-container">
-        <h1 class="game-title">SEA OTTER</h1>
-        <p class="game-subtitle">리듬에 맞춰 조개를 깨자!</p>
+      <!-- ─── 인트로 레이어 ─── -->
+      <div class="intro-layer" id="introLayer">
+        <!-- 타이틀 -->
+        <div class="title-container">
+          <h1 class="game-title">SEA OTTER</h1>
+          <p class="game-subtitle">리듬에 맞춰 조개를 깨자!</p>
+        </div>
+
+        <!-- 수달 -->
+        <div class="otter-container">
+          <img src="images/main_otter.png" alt="Sea Otter" class="otter" />
+        </div>
+
+        <!-- 물결 효과 -->
+        <div class="wave">
+          <div class="wave-ring"></div>
+          <div class="wave-ring"></div>
+          <div class="wave-ring"></div>
+        </div>
+
+        <!-- 시작 버튼 -->
+        <button class="start-btn" id="startBtn">START GAME</button>
       </div>
 
-      <!-- 수달 -->
-      <div class="otter-container">
-        <img src="images/main_otter.png" alt="Sea Otter" class="otter" />
+      <!-- ─── 게임 화면 ─── -->
+      <div class="game-screen" id="gameScreen">
+        <button class="pause-btn" id="pauseBtn">
+          <span class="pause-bar"></span>
+          <span class="pause-bar"></span>
+        </button>
+        <div class="sprite-character" id="spriteCharacter"></div>
       </div>
 
-      <!-- 물결 효과 -->
-      <div class="wave">
-        <div class="wave-ring"></div>
-        <div class="wave-ring"></div>
-        <div class="wave-ring"></div>
+      <!-- ─── 일시정지 모달 ─── -->
+      <div class="pause-overlay" id="pauseOverlay">
+        <div class="pause-modal">
+          <h2>PAUSED</h2>
+          <div class="pause-modal-buttons">
+            <button class="pause-modal-btn btn-resume" id="resumeBtn">게임 계속하기</button>
+            <button class="pause-modal-btn btn-home" id="homeBtn">처음으로 돌아가기</button>
+          </div>
+        </div>
       </div>
 
       <!-- 음악 인디케이터 -->
@@ -364,9 +557,6 @@
           <div class="music-bar"></div>
         </div>
       </div>
-
-      <!-- 시작 버튼 -->
-      <button class="start-btn" id="startBtn">START GAME</button>
     </div>
 
     <script src="js/bgm.js"></script>
@@ -411,14 +601,148 @@
           updateMusicUI();
         });
 
-      // ─── 시작 버튼 ───
-      document
-        .getElementById("startBtn")
-        .addEventListener("click", async () => {
-          await BGM.start();
-          updateMusicUI();
-          document.getElementById("startBtn").classList.add("hidden");
-        });
+      // ─── 스프라이트 관리 ───
+      const Sprite = {
+        el: null,
+        // sprite_success: 2x2 그리드 (1280x669 → 표시 640x335, 프레임 320x167)
+        // sprite_miss: 2x1 그리드 (1280x669 → 표시 640x669, 프레임 320x335)
+        successFrames: [
+          { x: 0, y: 0 },       // 1번: 기본 (조개 들고 있는 모습)
+          { x: -320, y: 0 },    // 2번: HIT
+          { x: 0, y: -167 },    // 3번: CRACK!
+          { x: -320, y: -167 }, // 4번: 기뻐하는 모습
+        ],
+        missFrames: [
+          { x: 30, y: 0 },      // 1번: 슬퍼하는 모습
+          { x: -290, y: 0 },    // 2번: MISS!
+        ],
+
+        init() {
+          this.el = document.getElementById("spriteCharacter");
+        },
+
+        showSuccess(frameIndex) {
+          const frame = this.successFrames[frameIndex];
+          this.el.style.backgroundImage = 'url("images/sprite_success.png")';
+          this.el.style.backgroundSize = "640px 335px";
+          this.el.style.width = "320px";
+          this.el.style.height = "167px";
+          this.el.style.backgroundPosition = frame.x + "px " + frame.y + "px";
+        },
+
+        showMiss(frameIndex) {
+          const frame = this.missFrames[frameIndex];
+          this.el.style.backgroundImage = 'url("images/sprite_miss.png")';
+          this.el.style.backgroundSize = "640px 335px";
+          this.el.style.width = "320px";
+          this.el.style.height = "335px";
+          this.el.style.backgroundPosition = frame.x + "px " + frame.y + "px";
+        },
+      };
+
+      // ─── 게임 시작 ───
+      async function startGame() {
+        const introLayer = document.getElementById("introLayer");
+        const gameScreen = document.getElementById("gameScreen");
+
+        // BGM 시작
+        await BGM.start();
+        updateMusicUI();
+
+        // 인트로 페이드아웃
+        introLayer.classList.add("fade-out");
+
+        // 게임 화면 페이드인
+        setTimeout(() => {
+          gameScreen.classList.add("active");
+          // 약간의 딜레이 후 opacity 전환
+          requestAnimationFrame(() => {
+            gameScreen.style.opacity = "1";
+          });
+        }, 300);
+
+        // 스프라이트 초기화 → 기본 캐릭터 (success 1번)
+        Sprite.init();
+        Sprite.showSuccess(0);
+      }
+
+      // ─── 탭(터치/클릭) 입력 처리 ───
+      let tapTimer = null;
+      let lastTapTime = 0;
+      const gamePlaying = () =>
+        document.getElementById("gameScreen").classList.contains("active") &&
+        !document.getElementById("pauseOverlay").classList.contains("active");
+
+      function handleTap() {
+        if (!gamePlaying()) return;
+
+        // 중복 호출 방지 (touchstart + click 동시 발생 차단)
+        const now = Date.now();
+        if (now - lastTapTime < 100) return;
+        lastTapTime = now;
+
+        // 랜덤으로 CRACK!(success 3번) 또는 MISS!(miss 2번) 표시
+        if (Math.random() < 0.5) {
+          Sprite.showSuccess(2);
+        } else {
+          Sprite.showMiss(1);
+        }
+
+        // 이전 타이머가 있으면 취소
+        if (tapTimer) clearTimeout(tapTimer);
+
+        // 300ms 후 기본 프레임(1번, index 0)으로 복귀
+        tapTimer = setTimeout(() => {
+          Sprite.showSuccess(0);
+          tapTimer = null;
+        }, 300);
+      }
+
+      document.getElementById("spriteCharacter").addEventListener("click", handleTap);
+
+      document.getElementById("spriteCharacter").addEventListener("touchstart", handleTap, { passive: true });
+
+      // ─── 일시정지 ───
+      function pauseGame() {
+        BGM.pause();
+        updateMusicUI();
+        const overlay = document.getElementById("pauseOverlay");
+        overlay.classList.add("active");
+      }
+
+      // ─── 게임 계속하기 ───
+      async function resumeGame() {
+        document.getElementById("pauseOverlay").classList.remove("active");
+        await BGM.start();
+        updateMusicUI();
+      }
+
+      // ─── 처음으로 돌아가기 ───
+      function goHome() {
+        const overlay = document.getElementById("pauseOverlay");
+        const gameScreen = document.getElementById("gameScreen");
+        const introLayer = document.getElementById("introLayer");
+
+        // 모달 닫기
+        overlay.classList.remove("active");
+
+        // BGM 정지
+        BGM.stop();
+        updateMusicUI();
+
+        // 게임 화면 숨기기
+        gameScreen.classList.remove("active");
+        gameScreen.style.opacity = "0";
+
+        // 인트로 다시 보이기
+        introLayer.classList.remove("fade-out");
+      }
+
+      // ─── 이벤트 바인딩 ───
+      document.getElementById("startBtn").addEventListener("click", startGame);
+      document.getElementById("pauseBtn").addEventListener("click", pauseGame);
+      document.getElementById("resumeBtn").addEventListener("click", resumeGame);
+      document.getElementById("homeBtn").addEventListener("click", goHome);
     </script>
   </body>
 </html>
