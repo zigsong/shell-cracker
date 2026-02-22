@@ -724,6 +724,17 @@
         },
       };
 
+      // ─── 효과음 ───
+      const SFX = {
+        hit: new Audio("sound/hit_3.mp3"),
+        miss: new Audio("sound/miss_2.mp3"),
+        play(type) {
+          const snd = this[type];
+          snd.currentTime = 0;
+          snd.play().catch(() => {});
+        },
+      };
+
       // ─── 조개 게임 로직 ───
       const ShellGame = {
         lane: null,
@@ -873,6 +884,7 @@
 
         // 성공: 열린 조개
         openShell(shell) {
+          SFX.play("hit");
           shell.state = "opened";
           shell.el.classList.add("opened");
           setTimeout(() => {
@@ -887,6 +899,7 @@
 
         // 실패: 깨진 조개
         missShell(shell) {
+          SFX.play("miss");
           shell.state = "broken";
           shell.el.classList.add("broken");
           Sprite.showMiss(1);
