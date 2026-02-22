@@ -571,6 +571,44 @@
           opacity: 1;
         }
       }
+
+      /* ─── 레벨 표시 ─── */
+      .level-indicator {
+        position: absolute;
+        top: 12%;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Jua", sans-serif;
+        font-size: 3.2rem;
+        color: #fff;
+        text-shadow:
+          1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff,
+          2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff,
+          2px 2px 0 rgba(255,255,255,0.6), -2px 2px 0 rgba(255,255,255,0.6);
+        filter:
+          drop-shadow(0 0 8px rgba(150, 220, 255, 1))
+          drop-shadow(0 0 22px rgba(80, 180, 255, 0.85))
+          drop-shadow(0 0 50px rgba(50, 140, 255, 0.5))
+          drop-shadow(0 4px 6px rgba(0, 60, 170, 0.45));
+        z-index: 60;
+        opacity: 0;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+
+      @keyframes levelPop {
+        0%   { opacity: 0; transform: translateX(-50%) scale(0.6); }
+        20%  { opacity: 1; transform: translateX(-50%) scale(1.18); }
+        35%  { transform: translateX(-50%) scale(0.94); }
+        50%  { transform: translateX(-50%) scale(1.06); }
+        62%  { transform: translateX(-50%) scale(1); }
+        72%  { opacity: 1; }
+        100% { opacity: 0; transform: translateX(-50%) scale(1); }
+      }
+
+      .level-indicator.show {
+        animation: levelPop 1.4s cubic-bezier(0.34, 1.5, 0.64, 1) forwards;
+      }
     </style>
   </head>
   <body>
@@ -613,6 +651,7 @@
           <span class="pause-bar"></span>
         </button>
         <div class="hit-zone-guide"></div>
+        <div class="level-indicator" id="levelIndicator"></div>
         <div class="shell-lane" id="shellLane"></div>
         <div class="sprite-character" id="spriteCharacter"></div>
       </div>
@@ -744,28 +783,27 @@
         running: false,
         speed: 3, // px per frame (recalculated on start)
         hitZoneSize: 60, // 수달 중심 기준 ±px
-        lastFrameTime: 0, // for delta-time based movement
+        // 조개 이동 거리 / 이동 박자 수 (고정)
+        travelBeats: 4,
+        travelDist: 0,
+        spawnFrozenUntilTick: 0, // 레벨업 시 첫 마디 스폰 금지
 
         start() {
           this.lane = document.getElementById("shellLane");
           this.shells = [];
           this.running = true;
+          this.travelDist = window.innerWidth / 2 + 70; // startX(+20) + shellCenter(+50)
 
-          // 속도 계산: 조개가 화면 오른쪽 → 히트존(중앙)까지 정확히 travelBeats 만에 도착
-          const bpm = Tone.Transport.bpm.value; // 140
-          const travelBeats = 4; // 4비트(1마디) 동안 이동 — 빠르게 도착
-          const travelTimeSec = travelBeats * (60 / bpm);
-          const travelDist = window.innerWidth / 2 + 30; // 오른쪽 끝 → 히트존 중앙 (오프셋 보정)
-          this.speed = travelDist / (travelTimeSec * 60); // px per frame @60fps
-
-          // Tone.Transport에 맞춰 조개 스폰 (매 2비트 = 반 마디마다)
+          // 다음 2비트 경계(킥 박자)에 스폰 시작 → 이후 2비트마다 반복
+          const snapStart = Tone.Transport.nextSubdivision("2n");
           this.spawnEvent = Tone.Transport.scheduleRepeat((time) => {
+            // 오디오 스케줄 시간의 정확한 tick을 미리 계산 (Draw 지연 보정)
+            const scheduledTick = Tone.Transport.getTicksAtTime(time);
             Tone.Draw.schedule(() => {
-              if (this.running) this.spawnShell();
+              if (this.running) this.spawnShell(scheduledTick);
             }, time);
-          }, "2n"); // 반음표 간격 (2비트마다)
+          }, "2n", snapStart);
 
-          this.lastFrameTime = performance.now();
           this.loop();
         },
 
@@ -776,7 +814,6 @@
             this.spawnEvent = null;
           }
           if (this.animFrame) cancelAnimationFrame(this.animFrame);
-          // 조개 요소 정리
           this.shells.forEach((s) => s.el.remove());
           this.shells = [];
         },
@@ -784,45 +821,50 @@
         pause() {
           this.running = false;
           if (this.animFrame) cancelAnimationFrame(this.animFrame);
-          // Transport가 일시정지되므로 spawnEvent도 자동 정지
         },
 
         resume() {
           if (this.running) return;
           this.running = true;
-          this.lastFrameTime = performance.now();
           this.loop();
-          // Transport가 재개되면 spawnEvent도 자동 재개
         },
 
-        spawnShell() {
+        freezeSpawnFor(beats) {
+          const PPQ = Tone.Transport.PPQ || 192;
+          this.spawnFrozenUntilTick = Tone.Transport.ticks + beats * PPQ;
+        },
+
+        spawnShell(spawnTick) {
+          if (spawnTick < this.spawnFrozenUntilTick) return; // 유예 중이면 무시
           const el = document.createElement("div");
           el.className = "shell";
           const startX = window.innerWidth + 20;
           el.style.left = startX + "px";
           el.style.top = "0px";
           this.lane.appendChild(el);
-          this.shells.push({ el, x: startX, state: "moving" });
+          this.shells.push({ el, x: startX, spawnTick, state: "moving" });
         },
 
         loop() {
           if (!this.running) return;
-          const now = performance.now();
-          const delta = (now - this.lastFrameTime) / (1000 / 60); // 60fps 기준 delta
-          this.lastFrameTime = now;
+
+          // tick 기반 위치 계산: BPM이 바뀌어도 항상 음악 박자에 동기화
+          const PPQ = Tone.Transport.PPQ || 192;
+          const travelTicks = this.travelBeats * PPQ;
+          const currentTick = Tone.Transport.ticks;
+          const startX = window.innerWidth + 20;
           const otterCenterX = window.innerWidth / 2;
 
           for (let i = this.shells.length - 1; i >= 0; i--) {
             const shell = this.shells[i];
             if (shell.state !== "moving") continue;
 
-            shell.x -= this.speed * delta;
-            shell.el.style.left = shell.x + "px";
+            const fraction = (currentTick - shell.spawnTick) / travelTicks;
+            const x = startX - fraction * this.travelDist;
+            shell.x = x;
+            shell.el.style.left = x + "px";
 
-            const shellCenter = shell.x + 50; // 조개 너비(100) / 2
-
-            // 조개가 수달 중심을 지나쳤으면 → 즉시 miss
-            if (shellCenter < otterCenterX - 15) {
+            if (x + 50 < otterCenterX - 15) {
               this.missShell(shell);
             }
           }
@@ -835,7 +877,7 @@
             }
           }
 
-          // 히트존 하이라이트: hittable 조개가 있으면 활성화
+          // 히트존 하이라이트
           const guide = document.querySelector(".hit-zone-guide");
           if (this.findHittable()) {
             guide.classList.add("hittable");
@@ -915,6 +957,63 @@
         },
       };
 
+      // ─── 레벨 시스템 ───
+      const LevelSystem = {
+        currentLevel: 1,
+        barCount: 0,
+        barsPerLevel: 8,
+        startBPM: 80,
+        bpmIncrement: 4,
+        barEvent: null,
+
+        init() {
+          this.currentLevel = 1;
+          this.barCount = 0;
+          Tone.Transport.bpm.value = this.startBPM;
+          // 속도는 tick 기반이므로 recalc 불필요
+        },
+
+        start() {
+          this.barEvent = Tone.Transport.scheduleRepeat((time) => {
+            Tone.Draw.schedule(() => {
+              this.onBar();
+            }, time);
+          }, "1m");
+        },
+
+        stop() {
+          if (this.barEvent !== null) {
+            Tone.Transport.clear(this.barEvent);
+            this.barEvent = null;
+          }
+          this.currentLevel = 1;
+          this.barCount = 0;
+        },
+
+        onBar() {
+          this.barCount++;
+          if (this.barCount % this.barsPerLevel === 0) {
+            this.levelUp();
+          }
+        },
+
+        levelUp() {
+          this.currentLevel++;
+          const newBPM = this.startBPM + (this.currentLevel - 1) * this.bpmIncrement;
+          Tone.Transport.bpm.value = newBPM;
+          ShellGame.freezeSpawnFor(4); // 첫 마디(4비트) 동안 조개 스폰 금지
+          this.showLevelIndicator();
+        },
+
+        showLevelIndicator() {
+          const el = document.getElementById("levelIndicator");
+          el.textContent = "Lv " + this.currentLevel;
+          el.classList.remove("show");
+          void el.offsetWidth; // 애니메이션 재시작을 위한 reflow
+          el.classList.add("show");
+        },
+      };
+
       // ─── 게임 시작 ───
       async function startGame() {
         const introLayer = document.getElementById("introLayer");
@@ -923,6 +1022,9 @@
         // BGM 시작
         await BGM.start();
         updateMusicUI();
+
+        // 레벨 초기화 (BPM을 70으로 설정)
+        LevelSystem.init();
 
         // 인트로 페이드아웃
         introLayer.classList.add("fade-out");
@@ -939,8 +1041,12 @@
         Sprite.init();
         Sprite.showSuccess(0);
 
-        // 조개 게임 시작
-        setTimeout(() => ShellGame.start(), 600);
+        // 조개 게임 시작 + 레벨 시스템 시작
+        setTimeout(() => {
+          ShellGame.start();
+          LevelSystem.start();
+          LevelSystem.showLevelIndicator();
+        }, 600);
       }
 
       // ─── 탭(터치/클릭) 입력 처리 ───
@@ -1011,6 +1117,7 @@
         BGM.stop();
         updateMusicUI();
         ShellGame.stop();
+        LevelSystem.stop();
 
         const gameScreen = document.getElementById("gameScreen");
         gameScreen.classList.remove("active");
