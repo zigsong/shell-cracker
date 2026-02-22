@@ -370,7 +370,8 @@
       }
 
       @keyframes characterFloat {
-        0%, 100% {
+        0%,
+        100% {
           transform: translateX(-50%) translateY(0);
         }
         50% {
@@ -493,6 +494,83 @@
         background: #2980b9;
         box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
       }
+
+      /* ─── 조개 레인 ─── */
+      .shell-lane {
+        position: absolute;
+        bottom: calc(25% + 192px);
+        left: 0;
+        width: 100%;
+        height: 140px;
+        z-index: 55;
+        pointer-events: none;
+      }
+
+      .shell {
+        position: absolute;
+        width: 100px;
+        height: 140px;
+        background-image: url("images/shell_types.png");
+        background-size: 300px 140px;
+        background-position: 0 0;
+        background-repeat: no-repeat;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        transition: opacity 0.3s ease;
+      }
+
+      .shell.opened {
+        background-position: -100px 0;
+      }
+
+      .shell.broken {
+        background-position: -200px 0;
+      }
+
+      .shell.fade-out {
+        opacity: 0;
+      }
+
+      /* ─── 히트존 가이드 원 ─── */
+      .hit-zone-guide {
+        position: absolute;
+        bottom: calc(25% + 215px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: 85px;
+        height: 85px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        background: radial-gradient(
+          circle,
+          rgba(52, 152, 219, 0) 40%,
+          rgba(52, 152, 219, 0.25) 65%,
+          rgba(52, 152, 219, 0.1) 80%,
+          transparent 100%
+        );
+        z-index: 54;
+        pointer-events: none;
+        animation: hitZonePulse 2s ease-in-out infinite;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .hit-zone-guide.hittable {
+        border-color: rgba(255, 255, 255, 0.9);
+        border-width: 3px;
+        box-shadow: 0 0 22px rgba(255, 255, 255, 0.6), inset 0 0 14px rgba(255, 255, 255, 0.2);
+        transform: translateX(-50%) scale(1.15);
+        animation: none;
+        opacity: 1;
+      }
+
+      @keyframes hitZonePulse {
+        0%,
+        100% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
@@ -534,6 +612,8 @@
           <span class="pause-bar"></span>
           <span class="pause-bar"></span>
         </button>
+        <div class="hit-zone-guide"></div>
+        <div class="shell-lane" id="shellLane"></div>
         <div class="sprite-character" id="spriteCharacter"></div>
       </div>
 
@@ -542,8 +622,12 @@
         <div class="pause-modal">
           <h2>PAUSED</h2>
           <div class="pause-modal-buttons">
-            <button class="pause-modal-btn btn-resume" id="resumeBtn">게임 계속하기</button>
-            <button class="pause-modal-btn btn-home" id="homeBtn">처음으로 돌아가기</button>
+            <button class="pause-modal-btn btn-resume" id="resumeBtn">
+              게임 계속하기
+            </button>
+            <button class="pause-modal-btn btn-home" id="homeBtn">
+              처음으로 돌아가기
+            </button>
           </div>
         </div>
       </div>
@@ -607,14 +691,14 @@
         // sprite_success: 2x2 그리드 (1280x669 → 표시 640x335, 프레임 320x167)
         // sprite_miss: 2x1 그리드 (1280x669 → 표시 640x669, 프레임 320x335)
         successFrames: [
-          { x: 0, y: 0 },       // 1번: 기본 (조개 들고 있는 모습)
-          { x: -320, y: 0 },    // 2번: HIT
-          { x: 0, y: -167 },    // 3번: CRACK!
+          { x: 0, y: 0 }, // 1번: 기본 (조개 들고 있는 모습)
+          { x: -320, y: 0 }, // 2번: HIT
+          { x: 0, y: -167 }, // 3번: CRACK!
           { x: -320, y: -167 }, // 4번: 기뻐하는 모습
         ],
         missFrames: [
-          { x: 30, y: 0 },      // 1번: 슬퍼하는 모습
-          { x: -290, y: 0 },    // 2번: MISS!
+          { x: 30, y: 0 }, // 1번: 슬퍼하는 모습
+          { x: -290, y: 0 }, // 2번: MISS!
         ],
 
         init() {
@@ -640,6 +724,184 @@
         },
       };
 
+      // ─── 조개 게임 로직 ───
+      const ShellGame = {
+        lane: null,
+        shells: [], // { el, x, state: 'moving'|'opened'|'broken'|'done' }
+        animFrame: null,
+        spawnEvent: null,
+        running: false,
+        speed: 3, // px per frame (recalculated on start)
+        hitZoneSize: 60, // 수달 중심 기준 ±px
+        lastFrameTime: 0, // for delta-time based movement
+
+        start() {
+          this.lane = document.getElementById("shellLane");
+          this.shells = [];
+          this.running = true;
+
+          // 속도 계산: 조개가 화면 오른쪽 → 히트존(중앙)까지 정확히 travelBeats 만에 도착
+          const bpm = Tone.Transport.bpm.value; // 140
+          const travelBeats = 4; // 4비트(1마디) 동안 이동 — 빠르게 도착
+          const travelTimeSec = travelBeats * (60 / bpm);
+          const travelDist = window.innerWidth / 2 + 30; // 오른쪽 끝 → 히트존 중앙 (오프셋 보정)
+          this.speed = travelDist / (travelTimeSec * 60); // px per frame @60fps
+
+          // Tone.Transport에 맞춰 조개 스폰 (매 2비트 = 반 마디마다)
+          this.spawnEvent = Tone.Transport.scheduleRepeat((time) => {
+            Tone.Draw.schedule(() => {
+              if (this.running) this.spawnShell();
+            }, time);
+          }, "2n"); // 반음표 간격 (2비트마다)
+
+          this.lastFrameTime = performance.now();
+          this.loop();
+        },
+
+        stop() {
+          this.running = false;
+          if (this.spawnEvent !== null) {
+            Tone.Transport.clear(this.spawnEvent);
+            this.spawnEvent = null;
+          }
+          if (this.animFrame) cancelAnimationFrame(this.animFrame);
+          // 조개 요소 정리
+          this.shells.forEach((s) => s.el.remove());
+          this.shells = [];
+        },
+
+        pause() {
+          this.running = false;
+          if (this.animFrame) cancelAnimationFrame(this.animFrame);
+          // Transport가 일시정지되므로 spawnEvent도 자동 정지
+        },
+
+        resume() {
+          if (this.running) return;
+          this.running = true;
+          this.lastFrameTime = performance.now();
+          this.loop();
+          // Transport가 재개되면 spawnEvent도 자동 재개
+        },
+
+        spawnShell() {
+          const el = document.createElement("div");
+          el.className = "shell";
+          const startX = window.innerWidth + 20;
+          el.style.left = startX + "px";
+          el.style.top = "0px";
+          this.lane.appendChild(el);
+          this.shells.push({ el, x: startX, state: "moving" });
+        },
+
+        loop() {
+          if (!this.running) return;
+          const now = performance.now();
+          const delta = (now - this.lastFrameTime) / (1000 / 60); // 60fps 기준 delta
+          this.lastFrameTime = now;
+          const otterCenterX = window.innerWidth / 2;
+
+          for (let i = this.shells.length - 1; i >= 0; i--) {
+            const shell = this.shells[i];
+            if (shell.state !== "moving") continue;
+
+            shell.x -= this.speed * delta;
+            shell.el.style.left = shell.x + "px";
+
+            const shellCenter = shell.x + 50; // 조개 너비(100) / 2
+
+            // 조개가 수달 중심을 지나쳤으면 → 즉시 miss
+            if (shellCenter < otterCenterX - 15) {
+              this.missShell(shell);
+            }
+          }
+
+          // 화면 밖으로 나간 조개 정리
+          for (let i = this.shells.length - 1; i >= 0; i--) {
+            if (this.shells[i].x < -100) {
+              this.shells[i].el.remove();
+              this.shells.splice(i, 1);
+            }
+          }
+
+          // 히트존 하이라이트: hittable 조개가 있으면 활성화
+          const guide = document.querySelector(".hit-zone-guide");
+          if (this.findHittable()) {
+            guide.classList.add("hittable");
+          } else {
+            guide.classList.remove("hittable");
+          }
+
+          this.animFrame = requestAnimationFrame(() => this.loop());
+        },
+
+        // 히트존 안의 moving 상태 조개 찾기
+        findHittable() {
+          const otterCenterX = window.innerWidth / 2;
+          let best = null;
+          let bestDist = Infinity;
+
+          for (const shell of this.shells) {
+            if (shell.state !== "moving") continue;
+            const shellCenter = shell.x + 50;
+            const dist = Math.abs(shellCenter - otterCenterX);
+            if (dist <= this.hitZoneSize && dist < bestDist) {
+              best = shell;
+              bestDist = dist;
+            }
+          }
+          return best;
+        },
+
+        // 화면 안에서 가장 가까운 moving 조개 찾기 (히트존 무관)
+        findNearest() {
+          const otterCenterX = window.innerWidth / 2;
+          let best = null;
+          let bestDist = Infinity;
+
+          for (const shell of this.shells) {
+            if (shell.state !== "moving") continue;
+            const shellCenter = shell.x + 50;
+            const dist = Math.abs(shellCenter - otterCenterX);
+            if (dist < bestDist) {
+              best = shell;
+              bestDist = dist;
+            }
+          }
+          return best;
+        },
+
+        // 성공: 열린 조개
+        openShell(shell) {
+          shell.state = "opened";
+          shell.el.classList.add("opened");
+          setTimeout(() => {
+            shell.el.classList.add("fade-out");
+            setTimeout(() => {
+              shell.el.remove();
+              const idx = this.shells.indexOf(shell);
+              if (idx !== -1) this.shells.splice(idx, 1);
+            }, 300);
+          }, 400);
+        },
+
+        // 실패: 깨진 조개
+        missShell(shell) {
+          shell.state = "broken";
+          shell.el.classList.add("broken");
+          Sprite.showMiss(1);
+          setTimeout(() => Sprite.showSuccess(0), 400);
+          setTimeout(() => {
+            shell.el.classList.add("fade-out");
+            setTimeout(() => {
+              shell.el.remove();
+              const idx = this.shells.indexOf(shell);
+              if (idx !== -1) this.shells.splice(idx, 1);
+            }, 300);
+          }, 400);
+        },
+      };
+
       // ─── 게임 시작 ───
       async function startGame() {
         const introLayer = document.getElementById("introLayer");
@@ -655,7 +917,6 @@
         // 게임 화면 페이드인
         setTimeout(() => {
           gameScreen.classList.add("active");
-          // 약간의 딜레이 후 opacity 전환
           requestAnimationFrame(() => {
             gameScreen.style.opacity = "1";
           });
@@ -664,11 +925,14 @@
         // 스프라이트 초기화 → 기본 캐릭터 (success 1번)
         Sprite.init();
         Sprite.showSuccess(0);
+
+        // 조개 게임 시작
+        setTimeout(() => ShellGame.start(), 600);
       }
 
       // ─── 탭(터치/클릭) 입력 처리 ───
-      let tapTimer = null;
       let lastTapTime = 0;
+      let tapResetTimer = null;
       const gamePlaying = () =>
         document.getElementById("gameScreen").classList.contains("active") &&
         !document.getElementById("pauseOverlay").classList.contains("active");
@@ -681,67 +945,73 @@
         if (now - lastTapTime < 100) return;
         lastTapTime = now;
 
-        // 랜덤으로 CRACK!(success 3번) 또는 MISS!(miss 2번) 표시
-        if (Math.random() < 0.5) {
+        if (tapResetTimer) clearTimeout(tapResetTimer);
+
+        // 히트존에 조개가 있는지 확인
+        const shell = ShellGame.findHittable();
+        if (shell) {
+          // 성공! → 열린 조개 + CRACK 수달
+          ShellGame.openShell(shell);
           Sprite.showSuccess(2);
         } else {
+          // 실패! → 가장 가까운 조개를 깨뜨림 + MISS 수달
+          const nearest = ShellGame.findNearest();
+          if (nearest) ShellGame.missShell(nearest);
           Sprite.showMiss(1);
         }
 
-        // 이전 타이머가 있으면 취소
-        if (tapTimer) clearTimeout(tapTimer);
-
-        // 300ms 후 기본 프레임(1번, index 0)으로 복귀
-        tapTimer = setTimeout(() => {
+        // 400ms 후 기본 포즈로 복귀
+        tapResetTimer = setTimeout(() => {
           Sprite.showSuccess(0);
-          tapTimer = null;
-        }, 300);
+          tapResetTimer = null;
+        }, 400);
       }
 
-      document.getElementById("spriteCharacter").addEventListener("click", handleTap);
+      document
+        .getElementById("spriteCharacter")
+        .addEventListener("click", handleTap);
 
-      document.getElementById("spriteCharacter").addEventListener("touchstart", handleTap, { passive: true });
+      document
+        .getElementById("spriteCharacter")
+        .addEventListener("touchstart", handleTap, { passive: true });
 
       // ─── 일시정지 ───
       function pauseGame() {
         BGM.pause();
         updateMusicUI();
-        const overlay = document.getElementById("pauseOverlay");
-        overlay.classList.add("active");
+        ShellGame.pause();
+        document.getElementById("pauseOverlay").classList.add("active");
       }
 
       // ─── 게임 계속하기 ───
       async function resumeGame() {
         document.getElementById("pauseOverlay").classList.remove("active");
-        await BGM.start();
+        ShellGame.resume(); // running=true 먼저 설정 후
+        await BGM.start();  // Transport 재개 (스폰 이벤트 자동 재개)
         updateMusicUI();
       }
 
       // ─── 처음으로 돌아가기 ───
       function goHome() {
-        const overlay = document.getElementById("pauseOverlay");
-        const gameScreen = document.getElementById("gameScreen");
-        const introLayer = document.getElementById("introLayer");
+        document.getElementById("pauseOverlay").classList.remove("active");
 
-        // 모달 닫기
-        overlay.classList.remove("active");
-
-        // BGM 정지
         BGM.stop();
         updateMusicUI();
+        ShellGame.stop();
 
-        // 게임 화면 숨기기
+        const gameScreen = document.getElementById("gameScreen");
         gameScreen.classList.remove("active");
         gameScreen.style.opacity = "0";
 
-        // 인트로 다시 보이기
-        introLayer.classList.remove("fade-out");
+        document.getElementById("introLayer").classList.remove("fade-out");
       }
 
       // ─── 이벤트 바인딩 ───
       document.getElementById("startBtn").addEventListener("click", startGame);
       document.getElementById("pauseBtn").addEventListener("click", pauseGame);
-      document.getElementById("resumeBtn").addEventListener("click", resumeGame);
+      document
+        .getElementById("resumeBtn")
+        .addEventListener("click", resumeGame);
       document.getElementById("homeBtn").addEventListener("click", goHome);
     </script>
   </body>
