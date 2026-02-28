@@ -530,45 +530,42 @@
         opacity: 0;
       }
 
-      /* ─── 히트존 가이드 원 ─── */
+      /* ─── 히트존 가이드 (조개 실루엣) ─── */
       .hit-zone-guide {
         position: absolute;
-        bottom: calc(25% + 215px);
+        bottom: calc(25% + 192px);
         left: 50%;
         transform: translateX(-50%);
-        width: 85px;
-        height: 85px;
-        border-radius: 50%;
-        border: 2px solid transparent;
-        background: radial-gradient(
-          circle,
-          rgba(52, 152, 219, 0) 40%,
-          rgba(52, 152, 219, 0.25) 65%,
-          rgba(52, 152, 219, 0.1) 80%,
-          transparent 100%
-        );
+        width: 100px;
+        height: 140px;
+        background-image: url("images/shell_types.png");
+        background-size: 300px 140px;
+        background-position: 0 0;
+        background-repeat: no-repeat;
         z-index: 54;
         pointer-events: none;
+        filter: drop-shadow(0 0 6px rgba(100, 200, 255, 0.7))
+          brightness(1.3)
+          saturate(0.2);
         animation: hitZonePulse 2s ease-in-out infinite;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        transition: filter 0.15s ease, transform 0.15s ease;
       }
 
       .hit-zone-guide.hittable {
-        border-color: rgba(255, 255, 255, 0.9);
-        border-width: 3px;
-        box-shadow: 0 0 22px rgba(255, 255, 255, 0.6), inset 0 0 14px rgba(255, 255, 255, 0.2);
-        transform: translateX(-50%) scale(1.15);
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.95))
+          drop-shadow(0 0 10px rgba(100, 200, 255, 0.9))
+          brightness(1.6);
+        transform: translateX(-50%) scale(1.08);
         animation: none;
-        opacity: 1;
       }
 
       @keyframes hitZonePulse {
         0%,
         100% {
-          opacity: 0.6;
+          opacity: 0.28;
         }
         50% {
-          opacity: 1;
+          opacity: 0.52;
         }
       }
 
@@ -582,11 +579,17 @@
         font-size: 3.2rem;
         color: #fff;
         text-shadow:
-          1px 1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff, -1px -1px 0 #fff,
-          2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff,
-          2px 2px 0 rgba(255,255,255,0.6), -2px 2px 0 rgba(255,255,255,0.6);
-        filter:
-          drop-shadow(0 0 8px rgba(150, 220, 255, 1))
+          1px 1px 0 #fff,
+          -1px 1px 0 #fff,
+          1px -1px 0 #fff,
+          -1px -1px 0 #fff,
+          2px 0 0 #fff,
+          -2px 0 0 #fff,
+          0 2px 0 #fff,
+          0 -2px 0 #fff,
+          2px 2px 0 rgba(255, 255, 255, 0.6),
+          -2px 2px 0 rgba(255, 255, 255, 0.6);
+        filter: drop-shadow(0 0 8px rgba(150, 220, 255, 1))
           drop-shadow(0 0 22px rgba(80, 180, 255, 0.85))
           drop-shadow(0 0 50px rgba(50, 140, 255, 0.5))
           drop-shadow(0 4px 6px rgba(0, 60, 170, 0.45));
@@ -597,13 +600,30 @@
       }
 
       @keyframes levelPop {
-        0%   { opacity: 0; transform: translateX(-50%) scale(0.6); }
-        20%  { opacity: 1; transform: translateX(-50%) scale(1.18); }
-        35%  { transform: translateX(-50%) scale(0.94); }
-        50%  { transform: translateX(-50%) scale(1.06); }
-        62%  { transform: translateX(-50%) scale(1); }
-        72%  { opacity: 1; }
-        100% { opacity: 0; transform: translateX(-50%) scale(1); }
+        0% {
+          opacity: 0;
+          transform: translateX(-50%) scale(0.6);
+        }
+        20% {
+          opacity: 1;
+          transform: translateX(-50%) scale(1.18);
+        }
+        35% {
+          transform: translateX(-50%) scale(0.94);
+        }
+        50% {
+          transform: translateX(-50%) scale(1.06);
+        }
+        62% {
+          transform: translateX(-50%) scale(1);
+        }
+        72% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform: translateX(-50%) scale(1);
+        }
       }
 
       .level-indicator.show {
@@ -796,13 +816,17 @@
 
           // 다음 2비트 경계(킥 박자)에 스폰 시작 → 이후 2비트마다 반복
           const snapStart = Tone.Transport.nextSubdivision("2n");
-          this.spawnEvent = Tone.Transport.scheduleRepeat((time) => {
-            // 오디오 스케줄 시간의 정확한 tick을 미리 계산 (Draw 지연 보정)
-            const scheduledTick = Tone.Transport.getTicksAtTime(time);
-            Tone.Draw.schedule(() => {
-              if (this.running) this.spawnShell(scheduledTick);
-            }, time);
-          }, "2n", snapStart);
+          this.spawnEvent = Tone.Transport.scheduleRepeat(
+            (time) => {
+              // 오디오 스케줄 시간의 정확한 tick을 미리 계산 (Draw 지연 보정)
+              const scheduledTick = Tone.Transport.getTicksAtTime(time);
+              Tone.Draw.schedule(() => {
+                if (this.running) this.spawnShell(scheduledTick);
+              }, time);
+            },
+            "2n",
+            snapStart,
+          );
 
           this.loop();
         },
@@ -999,7 +1023,8 @@
 
         levelUp() {
           this.currentLevel++;
-          const newBPM = this.startBPM + (this.currentLevel - 1) * this.bpmIncrement;
+          const newBPM =
+            this.startBPM + (this.currentLevel - 1) * this.bpmIncrement;
           Tone.Transport.bpm.value = newBPM;
           ShellGame.freezeSpawnFor(4); // 첫 마디(4비트) 동안 조개 스폰 금지
           this.showLevelIndicator();
@@ -1106,7 +1131,7 @@
       async function resumeGame() {
         document.getElementById("pauseOverlay").classList.remove("active");
         ShellGame.resume(); // running=true 먼저 설정 후
-        await BGM.start();  // Transport 재개 (스폰 이벤트 자동 재개)
+        await BGM.start(); // Transport 재개 (스폰 이벤트 자동 재개)
         updateMusicUI();
       }
 
