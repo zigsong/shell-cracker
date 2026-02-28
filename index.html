@@ -799,14 +799,24 @@
         lane: null,
         shells: [], // { el, x, state: 'moving'|'opened'|'broken'|'done' }
         animFrame: null,
-        spawnEvent: null,
+        spawnSequence: null,
         running: false,
-        speed: 3, // px per frame (recalculated on start)
         hitZoneSize: 60, // 수달 중심 기준 ±px
-        // 조개 이동 거리 / 이동 박자 수 (고정)
         travelBeats: 4,
         travelDist: 0,
         spawnFrozenUntilTick: 0, // 레벨업 시 첫 마디 스폰 금지
+
+        // 레벨별 스폰 패턴 ("4n" 기준, 8스텝 = 2마디 루프)
+        // 1=스폰, null=쉬기, [1,1]=8분음표 연타, [1,null,1]=3연음부
+        LEVEL_PATTERNS: {
+          1: [1, null, 1, null,  1, null, 1, null],
+          2: [1, null, [1,1], null,  1, null, [1,1], null],
+          3: [[1,1], null, 1, null,  [1,1], null, 1, 1],
+          4: [[1,1], 1, null, 1,  [1,1], null, [1,1], 1],
+          5: [null, [1,1], 1, null,  1, null, [1,1], 1],
+          6: [[1,null,1], null, 1, null,  [1,null,1], [1,1], null, 1],
+          7: [[1,1], [1,null,1], 1, null,  [1,1], 1, [1,null,1], null],
+        },
 
         start() {
           this.lane = document.getElementById("shellLane");
@@ -814,32 +824,48 @@
           this.running = true;
           this.travelDist = window.innerWidth / 2 + 70; // startX(+20) + shellCenter(+50)
 
-          // 다음 2비트 경계(킥 박자)에 스폰 시작 → 이후 2비트마다 반복
-          const snapStart = Tone.Transport.nextSubdivision("2n");
-          this.spawnEvent = Tone.Transport.scheduleRepeat(
-            (time) => {
-              // 오디오 스케줄 시간의 정확한 tick을 미리 계산 (Draw 지연 보정)
-              const scheduledTick = Tone.Transport.getTicksAtTime(time);
-              Tone.Draw.schedule(() => {
-                if (this.running) this.spawnShell(scheduledTick);
-              }, time);
-            },
-            "2n",
-            snapStart,
-          );
+          // 패턴 시퀀서 시작 (레벨 1 패턴, 다음 2분음표 경계에 맞춰)
+          this._startSequence(1);
+          this.spawnSequence.start("@2n");
 
           this.loop();
         },
 
         stop() {
           this.running = false;
-          if (this.spawnEvent !== null) {
-            Tone.Transport.clear(this.spawnEvent);
-            this.spawnEvent = null;
+          if (this.spawnSequence) {
+            this.spawnSequence.stop();
+            this.spawnSequence.dispose();
+            this.spawnSequence = null;
           }
           if (this.animFrame) cancelAnimationFrame(this.animFrame);
           this.shells.forEach((s) => s.el.remove());
           this.shells = [];
+        },
+
+        _startSequence(level) {
+          if (this.spawnSequence) {
+            this.spawnSequence.stop();
+            this.spawnSequence.dispose();
+            this.spawnSequence = null;
+          }
+          const pattern = this.LEVEL_PATTERNS[Math.min(level, 7)];
+          this.spawnSequence = new Tone.Sequence(
+            (time, value) => {
+              if (value === null) return;
+              const scheduledTick = Tone.Transport.getTicksAtTime(time);
+              Tone.Draw.schedule(() => {
+                if (this.running) this.spawnShell(scheduledTick);
+              }, time);
+            },
+            pattern,
+            "4n",
+          );
+        },
+
+        updatePattern(level) {
+          this._startSequence(level);
+          this.spawnSequence.start("@1m"); // 다음 마디 경계에 맞춰 새 패턴 시작
         },
 
         pause() {
@@ -1027,6 +1053,7 @@
             this.startBPM + (this.currentLevel - 1) * this.bpmIncrement;
           Tone.Transport.bpm.value = newBPM;
           ShellGame.freezeSpawnFor(4); // 첫 마디(4비트) 동안 조개 스폰 금지
+          ShellGame.updatePattern(this.currentLevel);
           this.showLevelIndicator();
         },
 
