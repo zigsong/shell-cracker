@@ -787,6 +787,7 @@
       const SFX = {
         hit: new Audio("sound/hit_3.mp3"),
         miss: new Audio("sound/miss_2.mp3"),
+        pop: new Audio("sound/pop_1.mp3"),
         play(type) {
           const snd = this[type];
           snd.currentTime = 0;
@@ -844,6 +845,8 @@
           if (this.animFrame) cancelAnimationFrame(this.animFrame);
           this.shells.forEach((s) => s.el.remove());
           this.shells = [];
+          this.spawnFrozenUntilTick = 0; // 재시작 시 틱 초기화
+          this.hitZoneY = null;
         },
 
         _startSequence(level) {
@@ -897,6 +900,7 @@
           el.style.left = shellX + "px";
           this.lane.appendChild(el);
           this.shells.push({ el, y: startY, spawnTick, state: "moving" });
+          SFX.play("pop");
         },
 
         loop() {
@@ -918,9 +922,9 @@
             shell.y = y;
             shell.el.style.top = y + "px";
 
-            // 히트존 아래로 지나간 경우 미스
+            // 히트존을 완전히 벗어난 경우 미스 (hitZoneSize 아래로 나갔을 때)
             const shellCenterY = y + 70;
-            if (shellCenterY > otterCenterY + 15) {
+            if (shellCenterY > otterCenterY + this.hitZoneSize) {
               this.missShell(shell);
             }
           }
@@ -1018,15 +1022,11 @@
         currentLevel: 1,
         barCount: 0,
         barsPerLevel: 8,
-        startBPM: 80,
-        bpmIncrement: 4,
         barEvent: null,
 
         init() {
           this.currentLevel = 1;
           this.barCount = 0;
-          Tone.Transport.bpm.value = this.startBPM;
-          // 속도는 tick 기반이므로 recalc 불필요
         },
 
         start() {
@@ -1055,9 +1055,6 @@
 
         levelUp() {
           this.currentLevel++;
-          const newBPM =
-            this.startBPM + (this.currentLevel - 1) * this.bpmIncrement;
-          Tone.Transport.bpm.value = newBPM;
           ShellGame.updatePattern(this.currentLevel);
           this.showLevelIndicator();
         },
@@ -1130,9 +1127,16 @@
           ShellGame.openShell(shell);
           Sprite.showSuccess(2);
         } else {
-          // 실패! → 가장 가까운 조개를 깨뜨림 + MISS 수달
+          // 실패! → 히트존 안/지나친 조개만 미스 (멀리 오는 다음 조개는 영향 없음)
           const nearest = ShellGame.findNearest();
-          if (nearest) ShellGame.missShell(nearest);
+          if (nearest) {
+            const hitZoneY =
+              ShellGame.hitZoneY || window.innerHeight * 0.75 - 262;
+            const nearestCenterY = nearest.y + 70;
+            if (nearestCenterY >= hitZoneY - ShellGame.hitZoneSize) {
+              ShellGame.missShell(nearest);
+            }
+          }
           Sprite.showMiss(1);
         }
 

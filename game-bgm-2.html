@@ -1,0 +1,518 @@
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  .wrap {
+    padding: 1.5rem 1rem;
+    font-family: var(--font-sans);
+  }
+  .title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin: 0 0 1rem;
+  }
+  button {
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    padding: 8px 18px;
+    border-radius: var(--border-radius-md);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover {
+    background: var(--color-background-secondary);
+  }
+  button.active {
+    background: #185fa5;
+    color: #fff;
+    border-color: #185fa5;
+  }
+  .bpm-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .bpm-row label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+  .bpm-row span {
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 30px;
+    color: var(--color-text-primary);
+  }
+  .tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .track {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .track-label {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    width: 60px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .pads {
+    display: flex;
+    gap: 4px;
+  }
+  .pad {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-secondary);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .pad.on {
+    border-color: #85b7eb;
+  }
+  .pad.playing {
+    outline: 2px solid #378add;
+    outline-offset: 1px;
+  }
+  .pad.beat-marker {
+    border-color: var(--color-border-secondary);
+  }
+  .sep {
+    width: 2px;
+    height: 28px;
+    background: var(--color-border-secondary);
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+  .presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .preset-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-secondary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover {
+    border-color: var(--color-border-secondary);
+    color: var(--color-text-primary);
+  }
+  .preset-btn.selected {
+    background: #e6f1fb;
+    border-color: #185fa5;
+    color: #185fa5;
+  }
+  .viz {
+    height: 40px;
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    margin-top: 1rem;
+    overflow: hidden;
+  }
+  canvas#viz {
+    width: 100%;
+    height: 40px;
+    display: block;
+  }
+  .info {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    margin-top: 0.75rem;
+  }
+</style>
+
+<div class="wrap">
+  <p class="title">8-bit rhythm BGM — ocean & clear</p>
+  <div
+    style="
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    "
+  >
+    <button id="playBtn">▶ Play</button>
+    <div class="bpm-row">
+      <label>BPM</label>
+      <input
+        type="range"
+        min="80"
+        max="180"
+        value="128"
+        id="bpmSlider"
+        style="width: 90px"
+      />
+      <span id="bpmVal">128</span>
+    </div>
+    <div class="bpm-row">
+      <label>Vol</label>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value="70"
+        id="volSlider"
+        style="width: 70px"
+      />
+    </div>
+  </div>
+  <div class="presets" id="presets"></div>
+  <div class="tracks" id="tracks"></div>
+  <div class="viz"><canvas id="viz"></canvas></div>
+  <p class="info">
+    정박 기반, 청량하고 살짝 부드러운 바다 느낌의 8비트 BGM입니다.
+  </p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script>
+  const STEPS = 16;
+  const TRACKS = [
+    { label: "kick", color: "#185FA5" },
+    { label: "snare", color: "#378ADD" },
+    { label: "hihat", color: "#85B7EB" },
+    { label: "melody", color: "#0C447C" },
+    { label: "arp", color: "#B5D4F4" },
+  ];
+
+  const PRESETS = {
+    Shoreline: {
+      bpm: 128,
+      kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+      hihat: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+      melody: [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+      arp: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    },
+    "Surf Run": {
+      bpm: 145,
+      kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+      hihat: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
+      melody: [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+      arp: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    },
+    "Tide Pool": {
+      bpm: 110,
+      kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+      hihat: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+      melody: [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+      arp: [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0],
+    },
+    "Deep Blue": {
+      bpm: 120,
+      kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+      hihat: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+      melody: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+      arp: [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+    },
+  };
+
+  let playing = false,
+    seq = null,
+    selectedPreset = "Shoreline";
+  const grid = {};
+  TRACKS.forEach((t) => {
+    grid[t.label] = Array(STEPS).fill(0);
+  });
+
+  function loadPreset(name) {
+    selectedPreset = name;
+    const p = PRESETS[name];
+    document.getElementById("bpmSlider").value = p.bpm;
+    document.getElementById("bpmVal").textContent = p.bpm;
+    Tone.Transport.bpm.value = p.bpm;
+    TRACKS.forEach((t) => {
+      grid[t.label] = [...p[t.label]];
+    });
+    renderPads();
+    document
+      .querySelectorAll(".preset-btn")
+      .forEach((b) => b.classList.toggle("selected", b.dataset.name === name));
+  }
+
+  // 킥: attack 살짝 늘려서 퍽→둥 느낌으로
+  const kick = (() => {
+    const env = new Tone.AmplitudeEnvelope({
+      attack: 0.004,
+      decay: 0.25,
+      sustain: 0,
+      release: 0.06,
+    }).toDestination();
+    const osc = new Tone.Oscillator({ frequency: 100, type: "sine" }).connect(
+      env,
+    );
+    return {
+      trigger(t) {
+        osc.start(t);
+        osc.stop(t + 0.32);
+        env.triggerAttackRelease(0.25, t);
+        osc.frequency.setValueAtTime(150, t);
+        osc.frequency.exponentialRampToValueAtTime(52, t + 0.1);
+      },
+    };
+  })();
+
+  // 스네어: 하이패스 살짝 낮춰서(2000Hz) 너무 날카롭지 않게, body 사인파로 살짝 통통한 느낌
+  const snare = (() => {
+    const gain = new Tone.Gain(0.5).toDestination();
+    const hiFilter = new Tone.Filter(2000, "highpass").connect(gain);
+    const noise = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.002, decay: 0.11, sustain: 0, release: 0.05 },
+    }).connect(hiFilter);
+    const body = new Tone.Synth({
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.002, decay: 0.1, sustain: 0, release: 0.04 },
+    }).connect(gain);
+    return {
+      trigger(t) {
+        noise.triggerAttackRelease("16n", t);
+        body.triggerAttackRelease(240, "16n", t, 0.4);
+      },
+    };
+  })();
+
+  // 하이햇: 6500Hz로 살짝 낮춰서 너무 찌르지 않게, decay 조금 늘림
+  const hihat = (() => {
+    const gain = new Tone.Gain(0.25).toDestination();
+    const filter = new Tone.Filter(6500, "highpass").connect(gain);
+    const noise = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.035, sustain: 0, release: 0.015 },
+    }).connect(filter);
+    return {
+      trigger(t) {
+        noise.triggerAttackRelease("32n", t);
+      },
+    };
+  })();
+
+  // 멜로디: 사각파 → 삼각파+사각파 믹스(pulse width 50%) + 로우패스 3500Hz
+  // 더 따뜻하고 둥글되 8비트 느낌 유지
+  const MELODY_NOTES = [
+    "C5",
+    "E5",
+    "G5",
+    "A5",
+    "C5",
+    "G5",
+    "E5",
+    "A5",
+    "C5",
+    "E5",
+    "G5",
+    "A5",
+    "E5",
+    "G5",
+    "C5",
+    "A5",
+  ];
+  const melody = (() => {
+    const filter = new Tone.Filter(3500, "lowpass").toDestination();
+    // 삼각파와 사각파를 섞어서 중간 느낌
+    const sq = new Tone.Synth({
+      oscillator: { type: "square" },
+      envelope: { attack: 0.003, decay: 0.13, sustain: 0.06, release: 0.1 },
+    }).connect(filter);
+    sq.volume.value = -10;
+    const tri = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.003, decay: 0.13, sustain: 0.06, release: 0.1 },
+    }).connect(filter);
+    tri.volume.value = -13;
+    return {
+      trigger(t, step) {
+        sq.triggerAttackRelease(MELODY_NOTES[step], "8n", t);
+        tri.triggerAttackRelease(MELODY_NOTES[step], "8n", t);
+      },
+    };
+  })();
+
+  // 아르페지오: 삼각파, 로우패스 5000Hz — 파도처럼 반짝이되 너무 날카롭지 않게
+  const ARP_NOTES = [
+    "C6",
+    "E6",
+    "G6",
+    "C6",
+    "A5",
+    "C6",
+    "E6",
+    "A5",
+    "F5",
+    "A5",
+    "C6",
+    "F5",
+    "G5",
+    "B5",
+    "D6",
+    "G5",
+  ];
+  const arp = (() => {
+    const filter = new Tone.Filter(5000, "lowpass").toDestination();
+    const synth = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.004, decay: 0.1, sustain: 0.0, release: 0.12 },
+    }).connect(filter);
+    synth.volume.value = -11;
+    return {
+      trigger(t, step) {
+        synth.triggerAttackRelease(ARP_NOTES[step], "16n", t);
+      },
+    };
+  })();
+
+  const SYNTHS = { kick, snare, hihat, melody, arp };
+
+  function startSeq() {
+    if (seq) seq.dispose();
+    seq = new Tone.Sequence(
+      (time, step) => {
+        TRACKS.forEach((tr) => {
+          if (grid[tr.label][step]) SYNTHS[tr.label].trigger(time, step);
+        });
+        Tone.getDraw().schedule(() => {
+          highlightStep(step);
+        }, time);
+      },
+      [...Array(STEPS).keys()],
+      "16n",
+    );
+    seq.start(0);
+  }
+
+  function highlightStep(step) {
+    document
+      .querySelectorAll(".pad")
+      .forEach((p) => p.classList.remove("playing"));
+    document
+      .querySelectorAll(`.pad[data-step="${step}"]`)
+      .forEach((p) => p.classList.add("playing"));
+    drawViz(step);
+  }
+
+  function renderPads() {
+    const container = document.getElementById("tracks");
+    container.innerHTML = "";
+    TRACKS.forEach((tr) => {
+      const row = document.createElement("div");
+      row.className = "track";
+      const lbl = document.createElement("div");
+      lbl.className = "track-label";
+      lbl.textContent = tr.label;
+      row.appendChild(lbl);
+      const pads = document.createElement("div");
+      pads.className = "pads";
+      for (let i = 0; i < STEPS; i++) {
+        if (i === 4 || i === 8 || i === 12) {
+          const sep = document.createElement("div");
+          sep.className = "sep";
+          pads.appendChild(sep);
+        }
+        const pad = document.createElement("div");
+        const isOn = !!grid[tr.label][i];
+        pad.className =
+          "pad" + (isOn ? " on" : "") + (i % 4 === 0 ? " beat-marker" : "");
+        pad.dataset.track = tr.label;
+        pad.dataset.step = i;
+        if (isOn) pad.style.background = tr.color;
+        pad.addEventListener("click", () => {
+          grid[tr.label][i] ^= 1;
+          pad.classList.toggle("on", !!grid[tr.label][i]);
+          pad.style.background = grid[tr.label][i] ? tr.color : "";
+        });
+        pads.appendChild(pad);
+      }
+      row.appendChild(pads);
+      container.appendChild(row);
+    });
+  }
+
+  const presetsEl = document.getElementById("presets");
+  Object.keys(PRESETS).forEach((name) => {
+    const btn = document.createElement("button");
+    btn.className = "preset-btn" + (name === selectedPreset ? " selected" : "");
+    btn.dataset.name = name;
+    btn.textContent = name;
+    btn.addEventListener("click", () => loadPreset(name));
+    presetsEl.appendChild(btn);
+  });
+
+  const playBtn = document.getElementById("playBtn");
+  playBtn.addEventListener("click", async () => {
+    await Tone.start();
+    if (!playing) {
+      startSeq();
+      Tone.Transport.start();
+      playing = true;
+      playBtn.textContent = "⏹ Stop";
+      playBtn.classList.add("active");
+    } else {
+      Tone.Transport.stop();
+      if (seq) seq.dispose();
+      playing = false;
+      playBtn.textContent = "▶ Play";
+      playBtn.classList.remove("active");
+      document
+        .querySelectorAll(".pad")
+        .forEach((p) => p.classList.remove("playing"));
+    }
+  });
+
+  document.getElementById("bpmSlider").addEventListener("input", (e) => {
+    const v = parseInt(e.target.value);
+    document.getElementById("bpmVal").textContent = v;
+    Tone.Transport.bpm.value = v;
+  });
+  document.getElementById("volSlider").addEventListener("input", (e) => {
+    Tone.Destination.volume.value = Tone.gainToDb(
+      parseInt(e.target.value) / 100,
+    );
+  });
+
+  const vizCanvas = document.getElementById("viz");
+  const vCtx = vizCanvas.getContext("2d");
+  vizCanvas.width = 700;
+  vizCanvas.height = 40;
+
+  function drawViz(step) {
+    const w = vizCanvas.width,
+      h = 40,
+      sw = w / STEPS;
+    vCtx.clearRect(0, 0, w, h);
+    for (let i = 0; i < STEPS; i++) {
+      const active = TRACKS.some((t) => grid[t.label][i]);
+      const cur = i === step;
+      if (cur) {
+        vCtx.fillStyle = "#185FA5";
+        vCtx.fillRect(i * sw, 0, sw - 2, h);
+      } else if (active) {
+        vCtx.fillStyle = "#85B7EB";
+        vCtx.fillRect(i * sw, h * 0.2, sw - 2, h * 0.6);
+      } else {
+        vCtx.fillStyle = "rgba(128,128,128,0.1)";
+        vCtx.fillRect(i * sw, h * 0.42, sw - 2, h * 0.16);
+      }
+    }
+  }
+  drawViz(-1);
+  loadPreset("Shoreline");
+</script>

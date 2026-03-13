@@ -1,178 +1,135 @@
-// ─── Game BGM using Tone.js ───
+// ─── Game BGM 2 — 8-bit rhythm, ocean & clear ───
 
 const BGM = {
   playing: false,
   inited: false,
-  mainVol: null,
-  leadSynth: null,
-  bassSynth: null,
-  arpSynth: null,
-  kickSynth: null,
-  hatSynth: null,
-  snareSynth: null,
-  leadPart: null,
-  bassPart: null,
-  arpPart: null,
-  drumLoop: null,
+  _seq: null,
+  _masterVol: null,
+
+  // 16-step grid (Shoreline preset)
+  _grid: {
+    kick:   [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+    snare:  [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+    hihat:  [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+    melody: [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,1,0],
+    arp:    [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+  },
+
+  _MELODY_NOTES: ["C5","E5","G5","A5","C5","G5","E5","A5","C5","E5","G5","A5","E5","G5","C5","A5"],
+  _ARP_NOTES:    ["C6","E6","G6","C6","A5","C6","E6","A5","F5","A5","C6","F5","G5","B5","D6","G5"],
+
+  _synths: null,
 
   async init() {
     if (this.inited) return;
     this.inited = true;
 
-    this.mainVol = new Tone.Volume(-10).toDestination();
+    this._masterVol = new Tone.Volume(-6).toDestination();
 
-    // Reverb는 비동기로 생성해야 함
-    const reverb = new Tone.Reverb({ decay: 1.2, wet: 0.15 });
-    await reverb.generate();
-    reverb.connect(this.mainVol);
+    // Kick
+    const kickEnv = new Tone.AmplitudeEnvelope({
+      attack: 0.004, decay: 0.25, sustain: 0, release: 0.06,
+    }).connect(this._masterVol);
+    const kickOsc = new Tone.Oscillator({ frequency: 100, type: "sine" }).connect(kickEnv);
 
-    const delay = new Tone.FeedbackDelay({
-      delayTime: "8n.",
-      feedback: 0.15,
-      wet: 0.12,
-    }).connect(reverb);
-
-    // Lead: catchy square wave melody
-    this.leadSynth = new Tone.Synth({
-      oscillator: { type: "square" },
-      envelope: { attack: 0.01, decay: 0.15, sustain: 0.3, release: 0.15 },
-      volume: -12,
-    }).connect(delay);
-
-    // Bass: punchy triangle
-    this.bassSynth = new Tone.MonoSynth({
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.1 },
-      filterEnvelope: {
-        attack: 0.01,
-        decay: 0.1,
-        sustain: 0.3,
-        release: 0.1,
-        baseFrequency: 200,
-        octaves: 1.5,
-      },
-      volume: -8,
-    }).connect(reverb);
-
-    // Arp: 8-bit pulse
-    this.arpSynth = new Tone.Synth({
-      oscillator: { type: "pulse", width: 0.3 },
-      envelope: { attack: 0.005, decay: 0.1, sustain: 0.1, release: 0.08 },
-      volume: -20,
-    }).connect(delay);
-
-    // Drums
-    this.kickSynth = new Tone.MembraneSynth({
-      pitchDecay: 0.04,
-      octaves: 5,
-      volume: -10,
-      envelope: { attack: 0.005, decay: 0.2, sustain: 0, release: 0.1 },
-    }).connect(this.mainVol);
-
-    this.hatSynth = new Tone.NoiseSynth({
+    // Snare
+    const snareGain = new Tone.Gain(0.5).connect(this._masterVol);
+    const snareHi = new Tone.Filter(2000, "highpass").connect(snareGain);
+    const snareNoise = new Tone.NoiseSynth({
       noise: { type: "white" },
-      envelope: { attack: 0.002, decay: 0.05, sustain: 0, release: 0.03 },
-      volume: -22,
-    }).connect(this.mainVol);
+      envelope: { attack: 0.002, decay: 0.11, sustain: 0, release: 0.05 },
+    }).connect(snareHi);
+    const snareBody = new Tone.Synth({
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.002, decay: 0.1, sustain: 0, release: 0.04 },
+    }).connect(snareGain);
 
-    this.snareSynth = new Tone.NoiseSynth({
-      noise: { type: "pink" },
-      envelope: { attack: 0.003, decay: 0.12, sustain: 0, release: 0.05 },
-      volume: -16,
-    }).connect(this.mainVol);
+    // Hihat
+    const hatGain = new Tone.Gain(0.25).connect(this._masterVol);
+    const hatFilter = new Tone.Filter(6500, "highpass").connect(hatGain);
+    const hatNoise = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.035, sustain: 0, release: 0.015 },
+    }).connect(hatFilter);
 
-    Tone.Transport.bpm.value = 140;
-    Tone.Transport.swing = 0;
+    // Melody (square + triangle mix)
+    const melFilter = new Tone.Filter(3500, "lowpass").connect(this._masterVol);
+    const melSq = new Tone.Synth({
+      oscillator: { type: "square" },
+      envelope: { attack: 0.003, decay: 0.13, sustain: 0.06, release: 0.1 },
+    }).connect(melFilter);
+    melSq.volume.value = -10;
+    const melTri = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.003, decay: 0.13, sustain: 0.06, release: 0.1 },
+    }).connect(melFilter);
+    melTri.volume.value = -13;
 
-    // Lead melody (2 bar loop)
-    this.leadPart = new Tone.Sequence(
-      (time, note) => {
-        if (note !== null) {
-          this.leadSynth.triggerAttackRelease(note, "16n", time);
-        }
+    // Arp (triangle)
+    const arpFilter = new Tone.Filter(5000, "lowpass").connect(this._masterVol);
+    const arpSynth = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.004, decay: 0.1, sustain: 0.0, release: 0.12 },
+    }).connect(arpFilter);
+    arpSynth.volume.value = -11;
+
+    this._synths = {
+      kick: {
+        trigger(t) {
+          kickOsc.start(t);
+          kickOsc.stop(t + 0.32);
+          kickEnv.triggerAttackRelease(0.25, t);
+          kickOsc.frequency.setValueAtTime(150, t);
+          kickOsc.frequency.exponentialRampToValueAtTime(52, t + 0.1);
+        },
       },
-      [
-        "E5", "E5", null, "G5",
-        "A5", null, "G5", "E5",
-        "D5", null, "E5", null,
-        "C5", null, null, null,
-        "E5", "E5", null, "G5",
-        "A5", null, "B5", "A5",
-        "G5", null, "E5", null,
-        "D5", null, null, null,
-      ],
+      snare: {
+        trigger(t) {
+          snareNoise.triggerAttackRelease("16n", t);
+          snareBody.triggerAttackRelease(240, "16n", t, 0.4);
+        },
+      },
+      hihat: {
+        trigger(t) {
+          hatNoise.triggerAttackRelease("32n", t);
+        },
+      },
+      melody: {
+        trigger: (t, step) => {
+          melSq.triggerAttackRelease(this._MELODY_NOTES[step], "8n", t);
+          melTri.triggerAttackRelease(this._MELODY_NOTES[step], "8n", t);
+        },
+      },
+      arp: {
+        trigger: (t, step) => {
+          arpSynth.triggerAttackRelease(this._ARP_NOTES[step], "16n", t);
+        },
+      },
+    };
+
+    Tone.Transport.bpm.value = 128;
+  },
+
+  _startSeq() {
+    if (this._seq) this._seq.dispose();
+    const TRACKS = ["kick", "snare", "hihat", "melody", "arp"];
+    this._seq = new Tone.Sequence(
+      (time, step) => {
+        TRACKS.forEach((tr) => {
+          if (this._grid[tr][step]) this._synths[tr].trigger(time, step);
+        });
+      },
+      [...Array(16).keys()],
       "16n"
     );
-
-    // Bass pattern (2 bar loop)
-    this.bassPart = new Tone.Sequence(
-      (time, note) => {
-        if (note !== null) {
-          this.bassSynth.triggerAttackRelease(note, "8n", time);
-        }
-      },
-      [
-        "C3", null, null, "C3",
-        null, null, "C3", null,
-        "E3", null, null, "E3",
-        null, null, "E3", null,
-        "F3", null, null, "F3",
-        null, null, "F3", null,
-        "G3", null, null, "G3",
-        null, null, "G2", null,
-      ],
-      "16n"
-    );
-
-    // Arp pattern (1 bar loop)
-    this.arpPart = new Tone.Sequence(
-      (time, note) => {
-        if (note !== null) {
-          this.arpSynth.triggerAttackRelease(note, "32n", time);
-        }
-      },
-      [
-        "C6", "E6", "G6", "E6",
-        "C6", "E6", "G6", "E6",
-        "C6", "E6", "G6", "E6",
-        "C6", "E6", "G6", "E6",
-      ],
-      "16n"
-    );
-
-    // Drum pattern (1 bar loop)
-    this.drumLoop = new Tone.Loop((time) => {
-      const pos = Tone.Transport.position;
-      const parts = pos.split(":");
-      const beat = parseInt(parts[1]);
-      const sub = parseInt(parts[2]);
-
-      if (beat === 0 && sub === 0)
-        this.kickSynth.triggerAttackRelease("C1", "16n", time);
-      if (beat === 1 && sub === 2)
-        this.kickSynth.triggerAttackRelease("C1", "16n", time, 0.6);
-      if (beat === 2 && sub === 0)
-        this.kickSynth.triggerAttackRelease("C1", "16n", time);
-      if (beat === 3 && sub === 2)
-        this.kickSynth.triggerAttackRelease("C1", "16n", time, 0.5);
-
-      if ((beat === 1 || beat === 3) && sub === 0)
-        this.snareSynth.triggerAttackRelease("16n", time, 0.7);
-
-      if (sub === 0 || sub === 2)
-        this.hatSynth.triggerAttackRelease("32n", time, 0.3 + (sub === 0 ? 0.2 : 0));
-    }, "16n");
+    this._seq.start(0);
   },
 
   async start() {
     await Tone.start();
     await this.init();
-
     if (!this.playing) {
-      this.leadPart.start(0);
-      this.bassPart.start(0);
-      this.arpPart.start(0);
-      this.drumLoop.start(0);
+      this._startSeq();
       Tone.Transport.start();
       this.playing = true;
     }
@@ -181,6 +138,7 @@ const BGM = {
   stop() {
     if (this.playing) {
       Tone.Transport.stop();
+      if (this._seq) { this._seq.dispose(); this._seq = null; }
       this.playing = false;
     }
   },
@@ -193,8 +151,8 @@ const BGM = {
   },
 
   setVolume(value) {
-    if (this.mainVol) {
-      this.mainVol.volume.value = Tone.gainToDb(value / 100);
+    if (this._masterVol) {
+      this._masterVol.volume.value = Tone.gainToDb(value / 100);
     }
-  }
+  },
 };
