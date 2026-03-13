@@ -136,11 +136,9 @@ const BGM = {
   },
 
   stop() {
-    if (this.playing) {
-      Tone.Transport.stop();
-      if (this._seq) { this._seq.dispose(); this._seq = null; }
-      this.playing = false;
-    }
+    Tone.Transport.stop();
+    if (this._seq) { this._seq.dispose(); this._seq = null; }
+    this.playing = false;
   },
 
   pause() {

@@ -519,7 +519,8 @@
       }
 
       .shell.opened {
-        background-position: -100px 0;
+        background-position: -80px 0;
+        clip-path: inset(0 0 0 20px);
       }
 
       .shell.broken {
@@ -528,6 +529,16 @@
 
       .shell.fade-out {
         opacity: 0;
+      }
+
+      .shell.tossing {
+        opacity: 0.45;
+        transform: scale(0.8);
+      }
+      .shell.catchable {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.25s ease, transform 0.25s ease;
       }
 
       /* ─── 히트존 가이드 (조개 실루엣) ─── */
@@ -785,9 +796,9 @@
 
       // ─── 효과음 ───
       const SFX = {
-        hit: new Audio("sound/hit_3.mp3"),
-        miss: new Audio("sound/miss_2.mp3"),
-        pop: new Audio("sound/pop_1.mp3"),
+        hit: new Audio("audio/hit_3.mp3"),
+        miss: new Audio("audio/miss_2.mp3"),
+        toss: new Audio("audio/toss_1.mp3"),
         play(type) {
           const snd = this[type];
           snd.currentTime = 0;
@@ -803,7 +814,7 @@
         spawnSequence: null,
         running: false,
         hitZoneSize: 60, // 수달 중심 기준 ±px
-        travelBeats: 4,
+        travelBeats: 8,
         travelDist: 0,
         spawnFrozenUntilTick: 0, // 레벨업 시 첫 마디 스폰 금지
 
@@ -891,16 +902,17 @@
         },
 
         spawnShell(spawnTick) {
-          if (spawnTick < this.spawnFrozenUntilTick) return; // 유예 중이면 무시
+          if (spawnTick < this.spawnFrozenUntilTick) return;
           const el = document.createElement("div");
-          el.className = "shell";
+          el.className = "shell tossing";
           const startY = -140;
-          const shellX = window.innerWidth / 2 - 50; // 100px 조개를 화면 중앙에
+          const baseX = window.innerWidth / 2 - 50;
+          const offsetX = (Math.random() < 0.5 ? -1 : 1) * (40 + Math.random() * 40);
           el.style.top = startY + "px";
-          el.style.left = shellX + "px";
+          el.style.left = (baseX + offsetX) + "px";
           this.lane.appendChild(el);
-          this.shells.push({ el, y: startY, spawnTick, state: "moving" });
-          SFX.play("pop");
+          this.shells.push({ el, y: startY, startX: baseX + offsetX, baseX, spawnTick, state: "moving" });
+          SFX.play("toss");
         },
 
         loop() {
@@ -922,9 +934,26 @@
             shell.y = y;
             shell.el.style.top = y + "px";
 
-            // 히트존을 완전히 벗어난 경우 미스 (hitZoneSize 아래로 나갔을 때)
+            // Phase 처리
+            if (fraction < 0.5) {
+              const t = fraction / 0.5;
+              const currentX = shell.startX + (shell.baseX - shell.startX) * t;
+              shell.el.style.left = currentX + "px";
+              if (!shell.el.classList.contains("tossing")) {
+                shell.el.classList.remove("catchable");
+                shell.el.classList.add("tossing");
+              }
+            } else {
+              shell.el.style.left = shell.baseX + "px";
+              if (!shell.el.classList.contains("catchable")) {
+                shell.el.classList.remove("tossing");
+                shell.el.classList.add("catchable");
+              }
+            }
+
+            // 히트존을 완전히 벗어난 경우 미스 (catchable 구간만)
             const shellCenterY = y + 70;
-            if (shellCenterY > otterCenterY + this.hitZoneSize) {
+            if (fraction >= 0.5 && shellCenterY > otterCenterY + this.hitZoneSize) {
               this.missShell(shell);
             }
           }
@@ -948,14 +977,19 @@
           this.animFrame = requestAnimationFrame(() => this.loop());
         },
 
-        // 히트존 안의 moving 상태 조개 찾기
+        // 히트존 안의 catchable(Phase 2) 조개 찾기
         findHittable() {
+          const PPQ = Tone.Transport.PPQ || 192;
+          const travelTicks = this.travelBeats * PPQ;
+          const currentTick = Tone.Transport.ticks;
           const otterCenterY = this.hitZoneY || window.innerHeight * 0.75 - 83;
           let best = null;
           let bestDist = Infinity;
 
           for (const shell of this.shells) {
             if (shell.state !== "moving") continue;
+            const fraction = (currentTick - shell.spawnTick) / travelTicks;
+            if (fraction < 0.5) continue;
             const shellCenter = shell.y + 70;
             const dist = Math.abs(shellCenter - otterCenterY);
             if (dist <= this.hitZoneSize && dist < bestDist) {
@@ -966,14 +1000,19 @@
           return best;
         },
 
-        // 화면 안에서 가장 가까운 moving 조개 찾기 (히트존 무관)
+        // catchable(Phase 2) 조개 중 가장 가까운 것 찾기
         findNearest() {
+          const PPQ = Tone.Transport.PPQ || 192;
+          const travelTicks = this.travelBeats * PPQ;
+          const currentTick = Tone.Transport.ticks;
           const otterCenterY = this.hitZoneY || window.innerHeight * 0.75 - 83;
           let best = null;
           let bestDist = Infinity;
 
           for (const shell of this.shells) {
             if (shell.state !== "moving") continue;
+            const fraction = (currentTick - shell.spawnTick) / travelTicks;
+            if (fraction < 0.5) continue;
             const shellCenter = shell.y + 70;
             const dist = Math.abs(shellCenter - otterCenterY);
             if (dist < bestDist) {
