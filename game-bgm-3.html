@@ -1,0 +1,245 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script>
+  const BPM = 128;
+  const BEAT_MS = 60000 / BPM; // 4분음표 ≈ 469ms
+  const BGM_STEP = BEAT_MS / 4; // 16분음표 단위
+
+  // ── 패턴 (16분음표 × 16스텝) ──────────────────────
+  const KICK_P = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]; // 4분음표 정박
+  const SNARE_P = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]; // 2·4박 백비트
+  const HIHAT_P = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]; // 8분음표 균등
+  const OHAT_P = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]; // 스네어 직전 오픈햇
+  const BASS_P = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]; // 4분음표 저음 펄스
+  const MEL_P = [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]; // 1·3박 또렷하게
+  const ARP_P = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0]; // 8분음표 반짝
+
+  // C - G - Am - F 코드 진행
+  const MEL_N = [
+    "C5",
+    "C5",
+    "G5",
+    "G5",
+    "A5",
+    "A5",
+    "F5",
+    "F5",
+    "C5",
+    "C5",
+    "G5",
+    "G5",
+    "A5",
+    "A5",
+    "F5",
+    "F5",
+  ];
+  const ARP_N = [
+    "E6",
+    "G6",
+    "E6",
+    "G6",
+    "A6",
+    "C6",
+    "A6",
+    "C6",
+    "E6",
+    "G6",
+    "E6",
+    "G6",
+    "A6",
+    "C6",
+    "A6",
+    "C6",
+  ];
+  const BASS_N = [
+    "C2",
+    "C2",
+    "C2",
+    "C2",
+    "G2",
+    "G2",
+    "G2",
+    "G2",
+    "A2",
+    "A2",
+    "A2",
+    "A2",
+    "F2",
+    "F2",
+    "F2",
+    "F2",
+  ];
+
+  // ── 신스 초기화 ───────────────────────────────────
+  let kick, snare, hihat, ohat, bass, mel, arp;
+
+  function initAudio() {
+    // 킥: 사인파 2레이어 + 소프트 디스토션
+    const kDist = new Tone.Distortion(0.1).toDestination();
+    const kEnv = new Tone.AmplitudeEnvelope({
+      attack: 0.001,
+      decay: 0.26,
+      sustain: 0,
+      release: 0.05,
+    }).connect(kDist);
+    const kOsc = new Tone.Oscillator({ type: "sine", frequency: 80 }).connect(
+      kEnv,
+    );
+    const kSubE = new Tone.AmplitudeEnvelope({
+      attack: 0.001,
+      decay: 0.18,
+      sustain: 0,
+      release: 0.04,
+    }).toDestination();
+    const kSub = new Tone.Oscillator({ type: "sine", frequency: 55 }).connect(
+      kSubE,
+    );
+    kick = {
+      fire(t) {
+        kOsc.start(t);
+        kOsc.stop(t + 0.35);
+        kEnv.triggerAttackRelease(0.26, t);
+        kOsc.frequency.setValueAtTime(190, t);
+        kOsc.frequency.exponentialRampToValueAtTime(42, t + 0.08);
+        kSub.start(t);
+        kSub.stop(t + 0.25);
+        kSubE.triggerAttackRelease(0.18, t);
+        kSub.frequency.setValueAtTime(110, t);
+        kSub.frequency.exponentialRampToValueAtTime(38, t + 0.07);
+      },
+    };
+
+    // 스네어: 노이즈 + 사인 바디
+    const sG = new Tone.Gain(0.65).toDestination();
+    const sHp = new Tone.Filter(1800, "highpass").connect(sG);
+    const sN = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.04 },
+    }).connect(sHp);
+    const sB = new Tone.Synth({
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.03 },
+    }).connect(sG);
+    snare = {
+      fire(t) {
+        sN.triggerAttackRelease("8n", t);
+        sB.triggerAttackRelease(255, "16n", t, 0.48);
+      },
+    };
+
+    // 닫힌 하이햇: 짧고 또각
+    const hG = new Tone.Gain(0.26).toDestination();
+    const hHp = new Tone.Filter(7000, "highpass").connect(hG);
+    const hN = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.025, sustain: 0, release: 0.008 },
+    }).connect(hHp);
+    hihat = {
+      fire(t) {
+        hN.triggerAttackRelease("32n", t);
+      },
+    };
+
+    // 오픈 하이햇: 스네어 직전 긴장감
+    const oG = new Tone.Gain(0.16).toDestination();
+    const oHp = new Tone.Filter(5800, "highpass").connect(oG);
+    const oN = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.09, sustain: 0.04, release: 0.06 },
+    }).connect(oHp);
+    ohat = {
+      fire(t) {
+        oN.triggerAttackRelease("8n", t);
+      },
+    };
+
+    // 베이스: 삼각파+사인파 믹스 → 포근한 저음
+    const bLp = new Tone.Filter(350, "lowpass").toDestination();
+    const bTri = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.012, decay: 0.18, sustain: 0.12, release: 0.08 },
+    }).connect(bLp);
+    const bSin = new Tone.Synth({
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.012, decay: 0.18, sustain: 0.12, release: 0.08 },
+    }).connect(bLp);
+    bTri.volume.value = -5;
+    bSin.volume.value = -8;
+    bass = {
+      fire(t, n) {
+        bTri.triggerAttackRelease(n, "8n", t);
+        bSin.triggerAttackRelease(n, "8n", t);
+      },
+    };
+
+    // 멜로디: 펄스파(50%) + 삼각파 → 사각파보다 둥글게
+    const mRev = new Tone.Reverb({ decay: 0.8, wet: 0.12 }).toDestination();
+    const mLp = new Tone.Filter(3800, "lowpass").connect(mRev);
+    const mPul = new Tone.Synth({
+      oscillator: { type: "pulse", width: 0.5 },
+      envelope: { attack: 0.006, decay: 0.12, sustain: 0.05, release: 0.1 },
+    }).connect(mLp);
+    const mTri = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.006, decay: 0.12, sustain: 0.05, release: 0.1 },
+    }).connect(mLp);
+    mPul.volume.value = -9;
+    mTri.volume.value = -14;
+    mel = {
+      fire(t, n) {
+        mPul.triggerAttackRelease(n, "8n", t);
+        mTri.triggerAttackRelease(n, "8n", t);
+      },
+    };
+
+    // 아르페지오: 순수 사인파 + 리버브 → 가장 동글동글
+    const aRev = new Tone.Reverb({ decay: 1.0, wet: 0.18 }).toDestination();
+    const aLp = new Tone.Filter(5200, "lowpass").connect(aRev);
+    const aSin = new Tone.Synth({
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.15 },
+    }).connect(aLp);
+    aSin.volume.value = -10;
+    arp = {
+      fire(t, n) {
+        aSin.triggerAttackRelease(n, "16n", t);
+      },
+    };
+  }
+
+  // ── BGM 루프 ──────────────────────────────────────
+  let bgmStep = 0,
+    bgmTimer = null;
+
+  function tickBGM() {
+    const t = Tone.now();
+    if (KICK_P[bgmStep]) kick.fire(t);
+    if (SNARE_P[bgmStep]) snare.fire(t);
+    if (HIHAT_P[bgmStep]) hihat.fire(t);
+    if (OHAT_P[bgmStep]) ohat.fire(t);
+    if (BASS_P[bgmStep]) bass.fire(t, BASS_N[bgmStep]);
+    if (MEL_P[bgmStep]) mel.fire(t, MEL_N[bgmStep]);
+    if (ARP_P[bgmStep]) arp.fire(t, ARP_N[bgmStep]);
+    bgmStep = (bgmStep + 1) % 16;
+    bgmTimer = setTimeout(tickBGM, BGM_STEP);
+  }
+
+  function startBGM() {
+    bgmStep = 0;
+    tickBGM();
+  }
+  function stopBGM() {
+    clearTimeout(bgmTimer);
+  }
+
+  // ── 사용법 ────────────────────────────────────────
+  // 버튼 등에서 아래처럼 호출
+  document.addEventListener(
+    "click",
+    async () => {
+      await Tone.start();
+      initAudio();
+      startBGM();
+    },
+    { once: true },
+  );
+</script>
