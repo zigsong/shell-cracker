@@ -174,6 +174,8 @@ const BGM = {
   async start() {
     await Tone.start();
     await this.init();
+    // 항상 볼륨 복원 (일시정지 중 mute 후 재개 포함)
+    if (this._masterVol) this._masterVol.volume.value = -6;
     if (!this.playing) {
       if (!this._seq) this._startSeq();
       Tone.Transport.start();

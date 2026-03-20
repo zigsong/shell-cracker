@@ -251,18 +251,14 @@
       .listen-message {
         position: absolute;
         top: 22%;
-        left: 50%;
+        left: 54%;
         transform: translateX(-50%);
-        font-family: "Jua", sans-serif;
-        font-size: 2.4rem;
-        color: rgba(255, 255, 255, 0.82);
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+        width: 240px;
+        height: auto;
         pointer-events: none;
         z-index: 56;
         opacity: 0;
         transition: opacity 0.4s ease;
-        white-space: nowrap;
-        letter-spacing: 0.04em;
       }
       .listen-message.show {
         opacity: 1;
@@ -511,13 +507,48 @@
         transition: opacity 0.3s ease;
       }
 
+      @keyframes shell-pop-hit {
+        0% {
+          transform: scale(1) rotate(0deg);
+        }
+        40% {
+          transform: scale(1.45) rotate(-4deg);
+        }
+        70% {
+          transform: scale(1.28) rotate(3deg);
+        }
+        100% {
+          transform: scale(1.22) rotate(-1deg);
+        }
+      }
+
+      @keyframes shell-pop-miss {
+        0% {
+          transform: scale(1) rotate(0deg);
+        }
+        25% {
+          transform: scale(1.38) rotate(-8deg);
+        }
+        55% {
+          transform: scale(1.28) rotate(6deg);
+        }
+        80% {
+          transform: scale(1.22) rotate(-3deg);
+        }
+        100% {
+          transform: scale(1.18) rotate(1deg);
+        }
+      }
+
       .shell.opened {
         background-position: -80px 0;
         clip-path: inset(0 0 0 20px);
+        animation: shell-pop-hit 0.25s ease-out forwards;
       }
 
       .shell.broken {
         background-position: -200px 0;
+        animation: shell-pop-miss 0.32s ease-out forwards;
       }
 
       .shell.fade-out {
@@ -645,6 +676,57 @@
         z-index: 60;
       }
 
+      /* ─── 점수 표시 ─── */
+      .score-display {
+        position: absolute;
+        top: 74px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Fredoka One", cursive;
+        font-size: 0.88rem;
+        color: rgba(255, 255, 255, 0.72);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+        z-index: 60;
+        pointer-events: none;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+      }
+
+      /* ─── 레벨 클리어 보너스 팝업 ─── */
+      .score-bonus-popup {
+        position: absolute;
+        left: 50%;
+        font-family: "Fredoka One", cursive;
+        font-size: 1.5rem;
+        color: #ffd700;
+        text-shadow:
+          0 0 14px rgba(255, 210, 0, 0.9),
+          0 2px 6px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        z-index: 62;
+        white-space: nowrap;
+        animation: bonusPop 1.1s ease-out forwards;
+      }
+
+      @keyframes bonusPop {
+        0% {
+          opacity: 0;
+          transform: translateX(-50%) translateY(0px) scale(0.6);
+        }
+        20% {
+          opacity: 1;
+          transform: translateX(-50%) translateY(-12px) scale(1.25);
+        }
+        55% {
+          opacity: 1;
+          transform: translateX(-50%) translateY(-24px) scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-48px) scale(0.85);
+        }
+      }
+
       /* ─── HP 바 (개별 하트 스프라이트) ─── */
       .hp-bar {
         display: flex;
@@ -761,6 +843,14 @@
       .gameover-modal .gameover-sub {
         font-size: 1rem;
         color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 16px;
+      }
+
+      .gameover-score {
+        font-family: "Press Start 2P", monospace;
+        font-size: 1.1rem;
+        color: #ffd700;
+        text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
         margin-bottom: 30px;
       }
 
@@ -808,13 +898,13 @@
       <div class="intro-layer" id="introLayer">
         <!-- 타이틀 -->
         <div class="title-container">
-          <h1 class="game-title">SEA OTTER</h1>
+          <h1 class="game-title">SHELL CRACKER</h1>
           <p class="game-subtitle">리듬에 맞춰 조개를 깨자!</p>
         </div>
 
         <!-- 수달 -->
         <div class="otter-container">
-          <img src="images/main_otter.png" alt="Sea Otter" class="otter" />
+          <img src="images/main_otter.png" alt="Shell Cracker" class="otter" />
         </div>
 
         <!-- 물결 효과 -->
@@ -835,16 +925,28 @@
           <span class="pause-bar"></span>
         </button>
         <button class="mute-btn" id="muteBtn" title="BGM 켜기/끄기">
-          <svg id="muteBtnIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+          <svg
+            id="muteBtnIcon"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"
+            />
           </svg>
         </button>
         <!-- HP 바 -->
         <div class="hp-bar-wrapper">
           <div class="hp-bar" id="hpBar"></div>
         </div>
+        <div class="score-display" id="scoreDisplay">SCORE: 0</div>
         <div class="hit-zone-guide"></div>
-        <div class="listen-message" id="listenMessage">LISTEN</div>
+        <img
+          class="listen-message"
+          id="listenMessage"
+          src="images/listen.png"
+          alt="LISTEN"
+        />
         <div class="shell-lane" id="shellLane"></div>
         <div class="sprite-character" id="spriteCharacter"></div>
       </div>
@@ -853,7 +955,7 @@
       <div class="gameover-overlay" id="gameoverOverlay">
         <div class="gameover-modal">
           <h2>GAME OVER</h2>
-          <p class="gameover-sub">수달은 힘들어 😢</p>
+          <p class="gameover-score" id="gameoverScore">SCORE: 0</p>
           <div class="gameover-modal-buttons">
             <button class="pause-modal-btn btn-resume" id="retryBtn">
               다시 도전하기
@@ -1038,7 +1140,7 @@
           { x: -320, y: -167 }, // 4번: 기뻐하는 모습
         ],
         missFrames: [
-          { x: 30, y: 0 }, // 1번: 슬퍼하는 모습
+          { x: 10, y: 0 }, // 1번: 슬퍼하는 모습
           { x: -290, y: 0 }, // 2번: MISS!
         ],
 
@@ -1056,6 +1158,7 @@
         },
 
         showMiss(frameIndex) {
+          if (frameIndex === 0) SFX.play("boing");
           const frame = this.missFrames[frameIndex];
           this.el.style.backgroundImage = 'url("images/sprite_miss.png")';
           this.el.style.backgroundSize = "640px 335px";
@@ -1068,7 +1171,10 @@
       // ─── 효과음 ───
       const SFX = {
         hit: new Audio("audio/hit_3.mp3"),
-        miss: new Audio("audio/miss_2.mp3"),
+        miss: Object.assign(new Audio("audio/miss_2.mp3"), {
+          playbackRate: 1.5,
+        }),
+        boing: new Audio("audio/boing.mp3"),
         play(type) {
           const snd = this[type];
           snd.currentTime = 0;
@@ -1103,7 +1209,45 @@
           const src = ctx.createBufferSource();
           src.buffer = this._buffer;
           src.connect(this._gainNode);
-          src.start(time, 0.183); // pop_1.mp3 앞 무음 175ms + onset 8ms = 183ms 스킵
+          src.start(time, 0.175); // pop_1.mp3 무음 구간 스킵 (조정값)
+        },
+      };
+
+      // ─── 점수 시스템 ───
+      const Score = {
+        current: 0,
+
+        init() {
+          this.current = 0;
+          this._render();
+        },
+
+        addHit() {
+          this.current += 5;
+          this._render();
+        },
+
+        addBonus() {
+          this.current += 10;
+          this._render();
+          this._showBonusPopup();
+        },
+
+        _render() {
+          const el = document.getElementById("scoreDisplay");
+          if (el) el.textContent = `SCORE: ${this.current}`;
+        },
+
+        _showBonusPopup() {
+          const scoreEl = document.getElementById("scoreDisplay");
+          const gameScreen = document.getElementById("gameScreen");
+          if (!scoreEl || !gameScreen) return;
+          const popup = document.createElement("div");
+          popup.className = "score-bonus-popup";
+          popup.textContent = "+10";
+          popup.style.top = scoreEl.offsetTop - 8 + "px";
+          gameScreen.appendChild(popup);
+          setTimeout(() => popup.remove(), 1100);
         },
       };
 
@@ -1119,37 +1263,41 @@
         travelBeats: 4,
         travelDist: 0,
         spawnFrozenUntilTick: 0, // 레벨업 시 첫 마디 스폰 금지
+        hitThisLevel: 0,
+        missedThisLevel: 0,
+        expectedShellsThisLevel: 0,
 
         // 레벨별 스폰 패턴 ("4n" 기준, 8스텝 = 2마디 루프)
         // Phase1(인덱스 0~3, 첫 마디)에만 스폰 → Phase2(인덱스 4~7)는 모두 null
         // 스폰된 조개는 4비트 후(Phase2 시작)에 pop → 유저가 Phase2에서 hit
         LEVEL_PATTERNS: [
-          null,                                                                // 0: 미사용
-          [1, 1, 1, 1, null, null, null, null],                               // 1: 4박 정박
-          [1, null, 1, null, null, null, null, null],                          // 2: 1·3박
-          [[1, 1], null, null, null, null, null, null, null],                  // 3: 8분 연타
-          [1, null, 1, 1, null, null, null, null],                            // 4: 1·3·4박
-          [[1, 1, 1], null, null, null, null, null, null, null],               // 5: 셋잇단
-          [1, 1, null, 1, null, null, null, null],                            // 6: 갤로핑
-          [[1, null, 1], null, [1, 1], null, null, null, null, null],         // 7: 싱코+연타
-          [[1, 1, null, 1], null, null, null, null, null, null, null],        // 8: 갤로핑 리듬
-          [[1, null, 1, null, 1], null, null, null, null, null, null, null],  // 9: 5분할
-          [[1, 1], null, [1, null, 1], null, null, null, null, null],         // 10: 복합
-          [[1, 1], null, [1, 1, 1], null, null, null, null, null],            // 11: 쌍+삼연음
-          [[1, 1, 1], null, [1, 1, 1], null, null, null, null, null],         // 12: 더블 삼연음
-          [1, [1, 1], 1, null, null, null, null, null],                       // 13: 분산 혼합
-          [[1, null, 1], [1, null, 1], null, null, null, null, null, null],   // 14: 싱코 반복
-          [[1, 1, null, 1], null, [1, 1], null, null, null, null, null],      // 15: 갤로핑+쌍
-          [[1, 1, 1, 1], null, null, null, null, null, null, null],           // 16: 16분 연속
-          [1, [1, 1], [1, null, 1], null, null, null, null, null],            // 17: 혼합 박자
-          [[1, null, 1, 1], [1, null, 1], null, null, null, null, null, null],// 18: 복잡한 분산
-          [[1, 1, 1], [null, 1, 1], null, null, null, null, null, null],      // 19: 연음 이어지기
-          [[1, 1], [1, null, 1], null, [1, 1], null, null, null, null],       // 20: 전박 분산
+          null, // 0: 미사용
+          [1, 1, 1, 1, null, null, null, null], // 1: 4박 정박
+          [1, null, 1, null, null, null, null, null], // 2: 1·3박
+          [[1, 1], null, null, null, null, null, null, null], // 3: 8분 연타
+          [1, null, 1, 1, null, null, null, null], // 4: 1·3·4박
+          [[1, 1, 1], null, null, null, null, null, null, null], // 5: 셋잇단
+          [1, 1, null, 1, null, null, null, null], // 6: 갤로핑
+          [[1, null, 1], null, [1, 1], null, null, null, null, null], // 7: 싱코+연타
+          [[1, 1, null, 1], null, null, null, null, null, null, null], // 8: 갤로핑 리듬
+          [[1, null, 1, null, 1], null, null, null, null, null, null, null], // 9: 5분할
+          [[1, 1], null, [1, null, 1], null, null, null, null, null], // 10: 복합
+          [[1, 1], null, [1, 1, 1], null, null, null, null, null], // 11: 쌍+삼연음
+          [[1, 1, 1], null, [1, 1, 1], null, null, null, null, null], // 12: 더블 삼연음
+          [1, [1, 1], 1, null, null, null, null, null], // 13: 분산 혼합
+          [[1, null, 1], [1, null, 1], null, null, null, null, null, null], // 14: 싱코 반복
+          [[1, 1, null, 1], null, [1, 1], null, null, null, null, null], // 15: 갤로핑+쌍
+          [[1, 1, 1, 1], null, null, null, null, null, null, null], // 16: 16분 연속
+          [1, [1, 1], [1, null, 1], null, null, null, null, null], // 17: 혼합 박자
+          [[1, null, 1, 1], [1, null, 1], null, null, null, null, null, null], // 18: 복잡한 분산
+          [[1, 1, 1], [null, 1, 1], null, null, null, null, null, null], // 19: 연음 이어지기
+          [[1, 1], [1, null, 1], null, [1, 1], null, null, null, null], // 20: 전박 분산
         ],
 
         // 레벨 → 패턴 (레벨 21부터는 10~20 순환)
         _getPattern(level) {
-          if (level < this.LEVEL_PATTERNS.length) return this.LEVEL_PATTERNS[level];
+          if (level < this.LEVEL_PATTERNS.length)
+            return this.LEVEL_PATTERNS[level];
           const hard = this.LEVEL_PATTERNS.slice(10);
           return hard[(level - 10) % hard.length];
         },
@@ -1190,6 +1338,11 @@
             this.spawnSequence = null;
           }
           const pattern = this._getPattern(level);
+          this.hitThisLevel = 0;
+          this.missedThisLevel = 0;
+          this.expectedShellsThisLevel = pattern
+            .flat()
+            .filter((v) => v === 1).length;
           this.spawnSequence = new Tone.Sequence(
             (time, value) => {
               if (value === null) return;
@@ -1253,7 +1406,7 @@
             const shell = this.shells[i];
             if (shell.state !== "moving") continue;
 
-            const VISUAL_AHEAD = Math.round(0.12 * PPQ); // 오디오 대비 시각 보정
+            const VISUAL_AHEAD = 0; // 오디오 비트와 시각 동기화
             const fraction =
               (currentTick - shell.spawnTick + VISUAL_AHEAD) / travelTicks;
             const y = startY + fraction * this.travelDist;
@@ -1332,9 +1485,23 @@
         },
 
         // 성공: 열린 조개
+        _checkLevelBonus() {
+          if (
+            this.hitThisLevel + this.missedThisLevel ===
+            this.expectedShellsThisLevel
+          ) {
+            if (this.missedThisLevel === 0 && this.hitThisLevel > 0) {
+              Score.addBonus();
+            }
+          }
+        },
+
         openShell(shell) {
           SFX.play("hit");
           HP.gain();
+          Score.addHit();
+          this.hitThisLevel++;
+          this._checkLevelBonus();
           shell.state = "opened";
           shell.el.classList.add("opened");
           setTimeout(() => {
@@ -1351,6 +1518,8 @@
         missShell(shell) {
           SFX.play("miss");
           HP.lose();
+          this.missedThisLevel++;
+          this._checkLevelBonus();
           shell.state = "broken";
           shell.el.classList.add("broken");
           Sprite.showMiss(1);
@@ -1416,7 +1585,7 @@
           const msg = document.getElementById("listenMessage");
           if (msg) {
             msg.classList.add("show");
-            const measureMs = (60000 / Tone.Transport.bpm.value) * 4;
+            const measureMs = (60000 / Tone.Transport.bpm.value) * 2; // 반 마디 후 사라짐
             clearTimeout(this._listenTimer);
             this._listenTimer = setTimeout(
               () => msg.classList.remove("show"),
@@ -1431,6 +1600,8 @@
         BGM.pause();
         ShellGame.stop();
         LevelSystem.stop();
+        const scoreEl = document.getElementById("gameoverScore");
+        if (scoreEl) scoreEl.textContent = `SCORE: ${Score.current}`;
         const overlay = document.getElementById("gameoverOverlay");
         overlay.style.display = "flex";
         requestAnimationFrame(() => {
@@ -1470,6 +1641,7 @@
 
         // HP 초기화
         HP.init();
+        Score.init();
 
         // 스프라이트 초기화 → 기본 캐릭터 (success 1번)
         Sprite.init();
@@ -1516,17 +1688,19 @@
           ShellGame.openShell(shell);
           Sprite.showSuccess(2);
         } else {
-          // 실패! → 히트존 안/지나친 조개만 미스 (멀리 오는 다음 조개는 영향 없음)
           const nearest = ShellGame.findNearest();
-          if (nearest) {
-            const hitZoneY =
-              ShellGame.hitZoneY || window.innerHeight * 0.75 - 262;
-            const nearestCenterY = nearest.y + 70;
-            if (nearestCenterY >= hitZoneY - ShellGame.hitZoneSize) {
-              ShellGame.missShell(nearest);
-            }
+          const hitZoneY =
+            ShellGame.hitZoneY || window.innerHeight * 0.75 - 262;
+          const inZone =
+            nearest && nearest.y + 70 >= hitZoneY - ShellGame.hitZoneSize;
+
+          if (inZone) {
+            // 조개가 히트존 안에 있는데 타이밍 놓침 → HP 감소 + MISS!
+            ShellGame.missShell(nearest);
+          } else {
+            // 조개 없거나 아직 멀리 있음 → HP 손실 없이 슬픈 표정만
+            Sprite.showMiss(0);
           }
-          Sprite.showMiss(1);
         }
 
         // 400ms 후 기본 포즈로 복귀
@@ -1545,17 +1719,32 @@
         .addEventListener("touchstart", handleTap, { passive: true });
 
       // ─── 일시정지 ───
+      // Transport를 pause하지 않고 볼륨만 끔 → Tone.js 시퀀스 스케줄 유지
       function pauseGame() {
-        BGM.pause();
-        ShellGame.pause();
+        if (BGM._masterVol) BGM._masterVol.volume.value = -Infinity; // 음소거
+        if (ShellGame.spawnSequence) ShellGame.spawnSequence.stop(); // 새 조개 스폰 중단
+        ShellGame._pauseTick = Tone.Transport.ticks; // 위치 보정용 틱 기록
+        ShellGame.running = false;
+        if (ShellGame.animFrame) cancelAnimationFrame(ShellGame.animFrame);
         document.getElementById("pauseOverlay").classList.add("active");
       }
 
       // ─── 게임 계속하기 ───
-      async function resumeGame() {
+      function resumeGame() {
         document.getElementById("pauseOverlay").classList.remove("active");
-        await BGM.start(); // Transport 먼저 재개
-        ShellGame.resume(); // Transport 살아있는 상태에서 loop 재시작
+        // 볼륨 복원
+        if (BGM._masterVol) BGM._masterVol.volume.value = -6;
+        // Transport가 계속 진행된 만큼 spawnTick 보정 → 조개가 멈춘 자리에서 이어서
+        const ticksElapsed = Tone.Transport.ticks - (ShellGame._pauseTick || 0);
+        ShellGame.shells.forEach((s) => {
+          if (s.state === "moving") s.spawnTick += ticksElapsed;
+        });
+        // spawnSequence 즉시 재시작
+        ShellGame._startSequence(LevelSystem.currentLevel);
+        ShellGame.spawnSequence.start("+0");
+        // 애니메이션 루프 재시작
+        ShellGame.running = true;
+        ShellGame.loop();
       }
 
       // ─── 처음으로 돌아가기 ───
@@ -1585,8 +1774,8 @@
         .getElementById("retryBtn")
         .addEventListener("click", async () => {
           hideGameover();
-          BGM.stop();        // Transport 완전 리셋 (0으로)
-          ShellGame.stop();  // 혹시 남은 조개 정리
+          BGM.stop(); // Transport 완전 리셋 (0으로)
+          ShellGame.stop(); // 혹시 남은 조개 정리
           LevelSystem.stop();
           await startGame(); // 처음부터 새 게임
         });
@@ -1597,7 +1786,9 @@
       const UNMUTE_ICON = `<path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>`;
       document.getElementById("muteBtn").addEventListener("click", () => {
         _bgmMuted = !_bgmMuted;
-        document.getElementById("muteBtnIcon").innerHTML = _bgmMuted ? UNMUTE_ICON : MUTE_ICON;
+        document.getElementById("muteBtnIcon").innerHTML = _bgmMuted
+          ? UNMUTE_ICON
+          : MUTE_ICON;
         BGM.setVolume(_bgmMuted ? 0 : 100);
       });
       document
