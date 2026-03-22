@@ -1,0 +1,19 @@
+{
+  "appId": "com.ziglab.shellcracker",
+  "appName": "수달의 조개깨기",
+  "webDir": "www",
+  "ios": {
+    "allowsLinkPreview": false,
+    "scrollEnabled": false,
+    "backgroundColor": "#000000",
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    },
+    "AdMob": {
+      "appId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+[     458ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8765/js/tone.min.js:1
+[     459ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8765/js/tone.min.js:1
+[     578ms] Identifier 'Score' has already been declared
+[     502ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/css/images/game_bg.png:0
+[     572ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/favicon.ico:0

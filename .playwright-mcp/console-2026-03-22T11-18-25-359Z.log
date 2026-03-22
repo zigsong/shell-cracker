@@ -1,0 +1,11 @@
+[     344ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8765/js/tone.min.js:1
+[     344ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ http://localhost:8765/js/tone.min.js:1
+[     431ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/favicon.ico:0
+[    9277ms] RangeError: Value must be within [0, Infinity], got: -1.8189894035458566e-13
+    at Un (http://localhost:8765/js/tone.min.js:2:112488)
+    at so.setStateAtTime (http://localhost:8765/js/tone.min.js:2:140775)
+    at Hr.stop (http://localhost:8765/js/tone.min.js:2:285574)
+    at aa.stop (http://localhost:8765/js/tone.min.js:2:291065)
+    at Object.stop (http://localhost:8765/:1344:32)
+    at goHome (http://localhost:8765/:1847:19)
+    at eval (eval at evaluate (:301:30), <anonymous>:18:5)
