@@ -13,9 +13,11 @@ body {
 }
 
 .game-container {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: hidden;
 }
 
@@ -23,7 +25,7 @@ body {
 .background {
   position: absolute;
   inset: 0;
-  background: url("images/game_bg.png") center center / cover no-repeat;
+  background: url("../images/game_bg.png") center center / cover no-repeat;
   z-index: 0;
 }
 
@@ -313,7 +315,7 @@ body {
   transform: translateX(-50%);
   width: 320px;
   height: 167px;
-  background-image: url("images/sprite_success.png");
+  background-image: url("../images/sprite_success.png");
   background-size: 640px 335px;
   background-position: 0 0;
   background-repeat: no-repeat;
@@ -335,8 +337,8 @@ body {
 /* ─── 뮤트 버튼 ─── */
 .mute-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: calc(20px + env(safe-area-inset-top));
+  right: calc(20px + env(safe-area-inset-right));
   z-index: 60;
   width: 48px;
   height: 48px;
@@ -363,8 +365,8 @@ body {
 /* ─── 일시정지 버튼 ─── */
 .pause-btn {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: calc(20px + env(safe-area-inset-top));
+  left: calc(20px + env(safe-area-inset-left));
   z-index: 60;
   width: 48px;
   height: 48px;
@@ -392,7 +394,7 @@ body {
 
 /* ─── 일시정지 모달 ─── */
 .pause-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 200;
   background: rgba(0, 0, 0, 0.6);
@@ -508,7 +510,7 @@ body {
   position: absolute;
   width: 100px;
   height: 140px;
-  background-image: url("images/shell_types.png");
+  background-image: url("../images/shell_types.png");
   background-size: 300px 140px;
   background-position: 0 0;
   background-repeat: no-repeat;
@@ -584,7 +586,7 @@ body {
   transform: translateX(-50%);
   width: 100px;
   height: 140px;
-  background-image: url("images/shell_types.png");
+  background-image: url("../images/shell_types.png");
   background-size: 300px 140px;
   background-position: 0 0;
   background-repeat: no-repeat;
@@ -679,7 +681,7 @@ body {
 /* ─── HP 바 래퍼 ─── */
 .hp-bar-wrapper {
   position: absolute;
-  top: 20px;
+  top: calc(20px + env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: 60;
@@ -688,7 +690,7 @@ body {
 /* ─── 점수 표시 ─── */
 .score-display {
   position: absolute;
-  top: 74px;
+  top: calc(74px + env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   font-family: "Fredoka One", cursive;
@@ -755,7 +757,7 @@ body {
   width: 44px;
   height: 44px;
   overflow: hidden;
-  background-image: url("images/sprite_hp_heart.png");
+  background-image: url("../images/sprite_hp_heart.png");
   background-size: 352px 184px;
   background-repeat: no-repeat;
   background-position: 0px -70px;
@@ -808,7 +810,7 @@ body {
 
 /* ─── 게임오버 오버레이 ─── */
 .gameover-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 200;
   background: rgba(0, 0, 0, 0.7);

@@ -11,9 +11,6 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0
-    },
-    "AdMob": {
-      "appId": "ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"
     }
   }
 }

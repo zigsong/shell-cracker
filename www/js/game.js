@@ -5,9 +5,6 @@ async function triggerGameOver() {
   const scoreEl = document.getElementById("gameoverScore");
   if (scoreEl) scoreEl.textContent = `SCORE: ${Score.current}`;
 
-  // 전면광고 표시 후 게임오버 모달 노출
-  await showInterstitial();
-
   // 리워드 버튼 활성화
   const rewardBtn = document.getElementById("rewardAdBtn");
   if (rewardBtn) rewardBtn.disabled = false;
@@ -216,24 +213,10 @@ document
   .addEventListener("click", async () => {
     const btn = document.getElementById("rewardAdBtn");
     btn.disabled = true;
-    btn.textContent = "광고 로딩 중...";
-    const success = await showRewardAd();
-    if (success) {
-      hideGameover();
-      // BGM 재개 및 게임 재시작 (HP 1 회복된 상태로)
-      BGM.stop();
-      ShellGame.stop();
-      LevelSystem.stop();
-      await startGame();
-    } else {
-      btn.textContent = "❤️ 광고 보고 HP 회복";
-      btn.disabled = false;
-    }
+    HP.gain();
+    hideGameover();
+    BGM.stop();
+    ShellGame.stop();
+    LevelSystem.stop();
+    await startGame();
   });
-
-// AdMob 초기화 (Capacitor 준비 후 실행)
-if (window.Capacitor) {
-  document.addEventListener("deviceready", initAdMob);
-} else {
-  initAdMob();
-}
