@@ -50,10 +50,13 @@ const LevelSystem = {
 
   showLevelIndicator() {
     this.isListenPhase = true;
+    const msg = document.getElementById("listenMessage");
+    if (msg) msg.classList.add("show");
     const measureMs = (60000 / Tone.Transport.bpm.value) * 2;
     clearTimeout(this._listenTimer);
     this._listenTimer = setTimeout(() => {
       this.isListenPhase = false;
+      if (msg) msg.classList.remove("show");
     }, measureMs);
   },
 };

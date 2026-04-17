@@ -101,11 +101,18 @@ function handleTap(e) {
     const inZone =
       nearest && nearest.y + 70 >= hitZoneY - ShellGame.hitZoneSize;
 
-    if (inZone) {
+    if (LevelSystem.isListenPhase) {
+      // listen 단계에서는 miss 처리 없음, pop 없을 때만 boing
+      if (!PopSFX.isActive) Sprite.showMiss(0);
+    } else if (inZone) {
       // 조개가 히트존 안에 있는데 타이밍 놓침 → HP 감소 + MISS!
       ShellGame.missShell(nearest);
-    } else {
-      if (LevelSystem.isListenPhase) Sprite.showMiss(0);
+    } else if (nearest) {
+      // 조개가 히트존 밖 → HP만 감소, 조개는 계속 낙하
+      SFX.play("miss");
+      HP.lose();
+      Sprite.showMiss(1);
+      setTimeout(() => Sprite.showSuccess(0), 400);
     }
   }
 
@@ -116,13 +123,17 @@ function handleTap(e) {
   }, 400);
 }
 
-document
-  .getElementById("gameScreen")
-  .addEventListener("click", handleTap);
+let _touchFired = false;
 
-document
-  .getElementById("gameScreen")
-  .addEventListener("touchstart", handleTap, { passive: true });
+document.getElementById("gameScreen").addEventListener("touchstart", (e) => {
+  _touchFired = true;
+  handleTap(e);
+}, { passive: true });
+
+document.getElementById("gameScreen").addEventListener("click", (e) => {
+  if (_touchFired) { _touchFired = false; return; }
+  handleTap(e);
+});
 
 // ─── 일시정지 ───
 // Transport를 pause하지 않고 볼륨만 끔 → Tone.js 시퀀스 스케줄 유지

@@ -95,6 +95,8 @@ const ShellGame = {
         PopSFX.trigger(time);
         const scheduledTick = Tone.Transport.getTicksAtTime(time);
         Tone.Draw.schedule(() => {
+          PopSFX.isActive = true;
+          setTimeout(() => { PopSFX.isActive = false; }, 300);
           if (this.running) this.spawnShell(scheduledTick);
         }, time);
       },
