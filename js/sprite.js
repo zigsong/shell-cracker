@@ -27,8 +27,8 @@ const Sprite = {
     this.el.style.backgroundPosition = frame.x + "px " + frame.y + "px";
   },
 
-  showMiss(frameIndex) {
-    if (frameIndex === 0) SFX.play("boing");
+  showMiss(frameIndex, playSound = true) {
+    if (frameIndex === 0 && playSound) SFX.play("boing");
     const frame = this.missFrames[frameIndex];
     this.el.style.backgroundImage = 'url("images/sprite_miss.png")';
     this.el.style.backgroundSize = "640px 335px";

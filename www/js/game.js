@@ -105,8 +105,11 @@ function handleTap(e) {
       // 조개가 히트존 안에 있는데 타이밍 놓침 → HP 감소 + MISS!
       ShellGame.missShell(nearest);
     } else {
-      // 조개 없거나 아직 멀리 있음 → HP 손실 없이 슬픈 표정만
-      Sprite.showMiss(0);
+      // listen 단계(listenMessage 표시 중)일 때만 boing + 슬픈 표정
+      const inListenPhase = document
+        .getElementById("listenMessage")
+        ?.classList.contains("show");
+      if (inListenPhase) Sprite.showMiss(0);
     }
   }
 
