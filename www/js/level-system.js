@@ -4,10 +4,12 @@ const LevelSystem = {
   barCount: 0,
   barsPerLevel: 2,
   barEvent: null,
+  isListenPhase: false,
 
   init() {
     this.currentLevel = 1;
     this.barCount = 0;
+    this.isListenPhase = false;
   },
 
   start(seqStart = 0) {
@@ -41,24 +43,18 @@ const LevelSystem = {
       this.barEvent = null;
     }
     clearTimeout(this._listenTimer);
-    const msg = document.getElementById("listenMessage");
-    if (msg) msg.classList.remove("show");
+    this.isListenPhase = false;
     this.currentLevel = 1;
     this.barCount = 0;
   },
 
   showLevelIndicator() {
-    // Phase1 동안 "리듬을 잘 들으세요" 메시지 표시 → 1마디 후 자동 숨김
-    const msg = document.getElementById("listenMessage");
-    if (msg) {
-      msg.classList.add("show");
-      const measureMs = (60000 / Tone.Transport.bpm.value) * 2; // 반 마디 후 사라짐
-      clearTimeout(this._listenTimer);
-      this._listenTimer = setTimeout(
-        () => msg.classList.remove("show"),
-        measureMs,
-      );
-    }
+    this.isListenPhase = true;
+    const measureMs = (60000 / Tone.Transport.bpm.value) * 2;
+    clearTimeout(this._listenTimer);
+    this._listenTimer = setTimeout(() => {
+      this.isListenPhase = false;
+    }, measureMs);
   },
 };
 

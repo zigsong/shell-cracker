@@ -105,11 +105,7 @@ function handleTap(e) {
       // 조개가 히트존 안에 있는데 타이밍 놓침 → HP 감소 + MISS!
       ShellGame.missShell(nearest);
     } else {
-      // listen 단계(listenMessage 표시 중)일 때만 boing + 슬픈 표정
-      const inListenPhase = document
-        .getElementById("listenMessage")
-        ?.classList.contains("show");
-      if (inListenPhase) Sprite.showMiss(0);
+      if (LevelSystem.isListenPhase) Sprite.showMiss(0);
     }
   }
 
@@ -136,6 +132,11 @@ function pauseGame() {
   ShellGame._pauseTick = Tone.Transport.ticks; // 위치 보정용 틱 기록
   ShellGame.running = false;
   if (ShellGame.animFrame) cancelAnimationFrame(ShellGame.animFrame);
+  // listen 단계 플래그 및 타이머 정지
+  clearTimeout(LevelSystem._listenTimer);
+  LevelSystem.isListenPhase = false;
+  // 이미 스케줄된 pop 사운드 뮤트
+  if (PopSFX._gainNode) PopSFX._gainNode.gain.value = 0;
   document.getElementById("pauseOverlay").classList.add("active");
 }
 
@@ -144,6 +145,7 @@ function resumeGame() {
   document.getElementById("pauseOverlay").classList.remove("active");
   // 볼륨 복원
   if (BGM._masterVol) BGM._masterVol.volume.value = -6;
+  if (PopSFX._gainNode) PopSFX._gainNode.gain.value = 1.0;
   // Transport가 계속 진행된 만큼 spawnTick 보정 → 조개가 멈춘 자리에서 이어서
   const ticksElapsed = Tone.Transport.ticks - (ShellGame._pauseTick || 0);
   ShellGame.shells.forEach((s) => {
