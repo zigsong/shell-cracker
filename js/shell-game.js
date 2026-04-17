@@ -245,6 +245,7 @@ const ShellGame = {
     SFX.play("hit");
     HP.gain();
     Score.addHit();
+    window.Capacitor?.Plugins?.Haptics?.impact({ style: "Medium" });
     this.hitThisLevel++;
     this._checkLevelBonus();
     shell.state = "opened";
