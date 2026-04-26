@@ -4,19 +4,25 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "rm -rf www && mkdir -p www && cp index.html www/ && cp -r images www/ && cp -r audio www/ && cp -r fonts www/ && cp -r js www/ && cp -r css www/",
-    "sync": "npm run build && npx cap sync ios",
-    "open": "npx cap open ios"
+    "dev": "granite dev",
+    "web:dev": "vite",
+    "build": "ait build",
+    "web:build": "vite build",
+    "deploy": "ait deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@apps-in-toss/web-framework": "^2.4.7",
     "@capacitor-community/admob": "^8.0.0",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.2.0",
     "@capacitor/splash-screen": "^8.0.1"
+  },
+  "devDependencies": {
+    "vite": "^8.0.10"
   }
 }
