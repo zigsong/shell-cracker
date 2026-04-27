@@ -17,6 +17,7 @@ export default defineConfig({
       closeBundle() {
         copyDir('js', 'dist/js');
         if (fs.existsSync('audio')) copyDir('audio', 'dist/audio');
+        if (fs.existsSync('images')) copyDir('images', 'dist/images');
       },
     },
   ],

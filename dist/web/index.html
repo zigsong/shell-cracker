@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Sea Otter Rhythm - 조개 깨기</title>
+    <script src="js/tone.min.js"></script>
+    <script type="module" crossorigin src="/assets/index-Bu3cS7P-.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-D2Cq2dbN.css">
+  </head>
+  <body>
+    <div class="game-container">
+      <!-- 배경 -->
+      <div class="background"></div>
+      <div class="water-overlay"></div>
+
+      <!-- 물방울들 (JS로 생성) -->
+      <div id="bubbles"></div>
+
+      <!-- ─── 인트로 레이어 ─── -->
+      <div class="intro-layer" id="introLayer">
+        <!-- 타이틀 -->
+        <div class="title-container">
+          <h1 class="game-title">SHELL CRACKER</h1>
+          <p class="game-subtitle">리듬에 맞춰 조개를 깨자!</p>
+        </div>
+
+        <!-- 수달 -->
+        <div class="otter-container">
+          <img src="/assets/main_otter-XU3UEq_w.png" alt="Shell Cracker" class="otter" />
+        </div>
+
+        <!-- 물결 효과 -->
+        <div class="wave">
+          <div class="wave-ring"></div>
+          <div class="wave-ring"></div>
+          <div class="wave-ring"></div>
+        </div>
+
+        <!-- 시작 버튼 -->
+        <button class="start-btn" id="startBtn">START GAME</button>
+      </div>
+
+      <!-- ─── 게임 화면 ─── -->
+      <div class="game-screen" id="gameScreen">
+        <button class="pause-btn" id="pauseBtn">
+          <span class="pause-bar"></span>
+          <span class="pause-bar"></span>
+        </button>
+        <button class="mute-btn" id="muteBtn" title="BGM 켜기/끄기">
+          <svg
+            id="muteBtnIcon"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"
+            />
+          </svg>
+        </button>
+        <!-- HP 바 -->
+        <div class="hp-bar-wrapper">
+          <div class="hp-bar" id="hpBar"></div>
+        </div>
+        <div class="score-display" id="scoreDisplay">SCORE: 0</div>
+        <div class="hit-zone-guide"></div>
+        <img
+          class="listen-message"
+          id="listenMessage"
+          src="/assets/listen-CWQzosSx.png"
+          alt="LISTEN"
+        />
+        <div class="shell-lane" id="shellLane"></div>
+        <div class="sprite-character" id="spriteCharacter"></div>
+      </div>
+
+      <!-- ─── 게임오버 모달 ─── -->
+      <div class="gameover-overlay" id="gameoverOverlay">
+        <div class="gameover-modal">
+          <h2>GAME OVER</h2>
+          <p class="gameover-score" id="gameoverScore">SCORE: 0</p>
+          <div class="gameover-modal-buttons">
+            <button class="pause-modal-btn btn-resume" id="retryBtn">
+              다시 도전하기
+            </button>
+            <button class="pause-modal-btn btn-reward" id="rewardAdBtn">
+              ❤️ 광고 보고 HP 회복
+            </button>
+            <button class="pause-modal-btn btn-home" id="gameoverHomeBtn">
+              처음으로 돌아가기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── 일시정지 모달 ─── -->
+      <div class="pause-overlay" id="pauseOverlay">
+        <div class="pause-modal">
+          <h2>PAUSED</h2>
+          <div class="pause-modal-buttons">
+            <button class="pause-modal-btn btn-resume" id="resumeBtn">
+              게임 계속하기
+            </button>
+            <button class="pause-modal-btn btn-home" id="homeBtn">
+              처음으로 돌아가기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/bgm.js"></script>
+    <script src="js/bubbles.js"></script>
+    <script src="js/hp.js"></script>
+    <script src="js/sprite.js"></script>
+    <script src="js/sfx.js"></script>
+    <script src="js/score.js"></script>
+    <script src="js/shell-game.js"></script>
+    <script src="js/level-system.js"></script>
+    <script src="js/game.js"></script>
+  </body>
+</html>
