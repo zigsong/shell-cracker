@@ -55,7 +55,7 @@ const HP = {
     return -1;
   },
 
-  // miss: full → half (2→3), half → empty (2→5)
+  // miss: full/half → empty (2→5)
   lose() {
     const idx = this._rightmostNonEmpty();
     if (idx === -1) return;
@@ -67,22 +67,13 @@ const HP = {
     void h.offsetWidth;
     h.classList.add("anim-damage");
 
-    if (this.states[idx] === "full") {
-      // full → half
-      this.states[idx] = "half";
-      setTimeout(() => {
-        h.style.backgroundPosition = this.F.half;
-      }, 380);
-    } else {
-      // half → empty
-      this.states[idx] = "empty";
-      setTimeout(() => {
-        h.style.backgroundPosition = this.F.empty;
-        if (this.states.every((s) => s === "empty")) {
-          setTimeout(() => triggerGameOver(), 300);
-        }
-      }, 380);
-    }
+    this.states[idx] = "empty";
+    setTimeout(() => {
+      h.style.backgroundPosition = this.F.empty;
+      if (this.states.every((s) => s === "empty")) {
+        setTimeout(() => triggerGameOver(), 300);
+      }
+    }, 380);
   },
 
   // hit 1번: empty → half (6→7→3)

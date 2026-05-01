@@ -6,8 +6,8 @@ const ShellGame = {
   spawnSequence: null,
   running: false,
   hitZoneSize: 60, // 시각 하이라이트 및 자동 miss 판정용 ±px
-  hitWindow: 0.1, // fraction 기준 ±10% 이내만 hit 인정 (travelBeats=4 기준 ±0.4박 ≈ ±188ms)
-  travelBeats: 4,
+  hitWindow: 0.1, // fraction 기준 ±10% 이내만 hit 인정 (travelBeats=3 기준 ±0.3박 ≈ ±141ms)
+  travelBeats: 3,
   travelDist: 0,
   spawnFrozenUntilTick: 0, // 레벨업 시 첫 마디 스폰 금지
   hitThisLevel: 0,
