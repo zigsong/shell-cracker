@@ -5,3 +5,6 @@ android/
 .omc/
 
 .granite
+.env.local
+js/supabase-config.js
+www/js/config.js

@@ -14,6 +14,13 @@ async function triggerGameOver() {
   requestAnimationFrame(() => {
     overlay.style.opacity = "1";
   });
+
+  try {
+    Leaderboard.init();
+    await Leaderboard.submitScore(Score.current);
+  } catch (e) {
+    console.error("리더보드 오류", e);
+  }
 }
 
 function hideGameover() {
@@ -225,10 +232,15 @@ document
   });
 
 document
+  .getElementById("lbNicknameBtn")
+  .addEventListener("click", () => Leaderboard.updateNickname());
+
+document
   .getElementById("rewardAdBtn")
   .addEventListener("click", async () => {
     const btn = document.getElementById("rewardAdBtn");
     btn.disabled = true;
+    await Leaderboard.cancelScore();
     HP.gain();
     hideGameover();
     BGM.stop();

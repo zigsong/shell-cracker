@@ -871,6 +871,89 @@ body {
   gap: 12px;
 }
 
+.gameover-btn-row {
+  display: flex;
+  gap: 10px;
+}
+
+.gameover-btn-row .pause-modal-btn {
+  flex: 1;
+  white-space: nowrap;
+}
+
+/* ─── 리더보드 ─── */
+.lb-nickname-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  justify-content: center;
+}
+
+.lb-nickname-row input {
+  flex: 1;
+  max-width: 220px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.lb-nickname-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 200, 80, 0.85);
+  color: #1a1a1a;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.lb-container {
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.lb-table thead th {
+  padding: 9px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lb-table tbody tr td {
+  padding: 9px 10px;
+  color: rgba(255, 255, 255, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+
+.lb-table tbody tr.lb-mine td {
+  color: #ffd700;
+  font-weight: bold;
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.lb-loading {
+  padding: 18px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+
 /* ─── 레벨 전환 플래시 ─── */
 .level-flash {
   position: absolute;
