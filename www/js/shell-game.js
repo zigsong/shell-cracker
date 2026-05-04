@@ -245,7 +245,6 @@ const ShellGame = {
 
   openShell(shell) {
     SFX.play("hit");
-    HP.gain();
     Score.addHit();
     if (window.__AIT__?.generateHapticFeedback) {
       window.__AIT__.generateHapticFeedback({ type: "tickWeak" });
