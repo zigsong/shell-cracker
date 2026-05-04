@@ -74,7 +74,7 @@ const ShellGame = {
     return this._generatePattern(level);
   },
 
-  start(seqStart = 0) {
+  start(seqStart = 0, level = 1) {
     this.lane = document.getElementById("shellLane");
     this.shells = [];
     this.running = true;
@@ -83,7 +83,7 @@ const ShellGame = {
     this.hitZoneY = hitZoneCenterY;
     this.travelDist = hitZoneCenterY + 70; // shell center starts at -70, arrives at hitZoneCenterY
 
-    this._startSequence(1);
+    this._startSequence(level);
     this.spawnSequence.start(seqStart); // 다음 마디 경계에 정확히 시작 → BGM 동기화
 
     this.loop();

@@ -94,12 +94,22 @@ const Ads = {
         resolve(true);
         return;
       }
+      let settled = false;
       let rewarded = false;
+      const done = (val) => {
+        if (settled) return;
+        settled = true;
+        resolve(val);
+      };
+
+      const timer = setTimeout(() => done(true), 15000);
+
       showFullScreenAd({
         options: { adGroupId: this._AIT_REWARDED_ID },
         onEvent: (e) => {
           if (e.type === "userEarnedReward") rewarded = true;
           if (e.type === "dismissed") {
+            clearTimeout(timer);
             if (loadFullScreenAd?.isSupported?.()) {
               loadFullScreenAd({
                 options: { adGroupId: this._AIT_REWARDED_ID },
@@ -107,11 +117,17 @@ const Ads = {
                 onError: () => {},
               });
             }
-            resolve(rewarded);
+            done(rewarded);
           }
-          if (e.type === "failedToShow") resolve(false);
+          if (e.type === "failedToShow") {
+            clearTimeout(timer);
+            done(true);
+          }
         },
-        onError: () => resolve(false),
+        onError: () => {
+          clearTimeout(timer);
+          done(true);
+        },
       });
     });
   },
@@ -121,7 +137,10 @@ const Ads = {
     const AdMob = window.Capacitor?.Plugins?.AdMob;
     if (!AdMob || this._admobInitialized) return;
     try {
-      await AdMob.initialize({ requestTrackingAuthorization: true });
+      await AdMob.initialize({
+        requestTrackingAuthorization: true,
+        testingDevices: ["simulator"],
+      });
       this._admobInitialized = true;
     } catch (e) {
       console.error("AdMob init error:", e);
@@ -149,7 +168,13 @@ const Ads = {
     const AdMob = window.Capacitor?.Plugins?.AdMob;
     if (!AdMob) return true;
     try {
-      await AdMob.prepareRewardVideoAd({ adId: this._ADMOB_REWARDED_ID });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("ad load timeout")), 10000)
+      );
+      await Promise.race([
+        AdMob.prepareRewardVideoAd({ adId: this._ADMOB_REWARDED_ID }),
+        timeout,
+      ]);
       return new Promise((resolve) => {
         let rewarded = false;
         let rl, dl;
