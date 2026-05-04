@@ -188,8 +188,11 @@ body {
 .start-btn {
   position: absolute;
   top: 42%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  transform: translateY(-50%);
   z-index: 100;
   padding: 25px 70px;
   font-family: "Press Start 2P", monospace;
@@ -204,23 +207,23 @@ body {
 }
 
 .start-btn:hover {
-  transform: translate(-50%, -50%) translateY(-2px);
+  transform: translateY(calc(-50% - 2px));
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
 }
 
 .start-btn:active {
-  transform: translate(-50%, -50%) translateY(2px);
+  transform: translateY(calc(-50% + 2px));
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
 
 @keyframes bounce {
   0%,
   100% {
-    transform: translate(-50%, -50%) translateY(0);
+    transform: translateY(-50%);
   }
   50% {
-    transform: translate(-50%, -50%) translateY(-5px);
+    transform: translateY(calc(-50% - 5px));
   }
 }
 
