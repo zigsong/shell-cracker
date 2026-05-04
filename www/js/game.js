@@ -36,6 +36,7 @@ async function startGame() {
   const introLayer = document.getElementById("introLayer");
   const gameScreen = document.getElementById("gameScreen");
 
+  IntroMusic.stop();
   await BGM.start();
   await PopSFX.init();
 
@@ -190,6 +191,7 @@ function goHome() {
   gameScreen.style.opacity = "0";
 
   document.getElementById("introLayer").classList.remove("fade-out");
+  IntroMusic.play();
 }
 
 // ─── 이벤트 바인딩 ───
@@ -229,6 +231,7 @@ document
     gameScreen.classList.remove("active");
     gameScreen.style.opacity = "0";
     document.getElementById("introLayer").classList.remove("fade-out");
+    IntroMusic.play();
   });
 
 document
@@ -248,3 +251,36 @@ document
     LevelSystem.stop();
     await startGame();
   });
+
+// ─── 인트로 음악 ───
+const IntroMusic = {
+  _audio: null,
+
+  _get() {
+    if (!this._audio) {
+      this._audio = new Audio("audio/gentle_sea_wave.mp3");
+      this._audio.loop = true;
+      this._audio.volume = 0.5;
+    }
+    return this._audio;
+  },
+
+  play() {
+    this._get().play().catch(() => {});
+  },
+
+  stop() {
+    if (this._audio) {
+      this._audio.pause();
+      this._audio.currentTime = 0;
+    }
+  },
+};
+
+// 인트로 화면 첫 터치/클릭 시 음악 시작 (모바일 autoplay 정책 우회)
+document.getElementById("introLayer").addEventListener(
+  "touchstart",
+  () => IntroMusic.play(),
+  { once: true }
+);
+IntroMusic.play();
