@@ -980,3 +980,14 @@ body {
 .level-flash.show {
   animation: levelFlash 0.9s ease-out forwards;
 }
+
+/* ── 인트로 배너 광고 (AIT용) ── */
+.intro-banner-ad {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  min-height: 96px;
+  display: none;
+}

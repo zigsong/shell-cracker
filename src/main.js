@@ -1,4 +1,4 @@
-import { SafeAreaInsets, GoogleAdMob, generateHapticFeedback } from '@apps-in-toss/web-framework';
+import { SafeAreaInsets, GoogleAdMob, generateHapticFeedback, TossAds, loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
 
 function applySafeAreaInsets({ top, bottom, left, right }) {
   const s = document.documentElement.style;
@@ -12,4 +12,4 @@ applySafeAreaInsets(SafeAreaInsets.get());
 SafeAreaInsets.subscribe({ onEvent: applySafeAreaInsets });
 
 // Expose to game scripts (loaded as global <script> tags)
-window.__AIT__ = { GoogleAdMob, generateHapticFeedback };
+window.__AIT__ = { GoogleAdMob, generateHapticFeedback, TossAds, loadFullScreenAd, showFullScreenAd };

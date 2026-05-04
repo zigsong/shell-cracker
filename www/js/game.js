@@ -1,13 +1,20 @@
+let _savedLevel = 1;
+let _adUsed = false;
+
 async function triggerGameOver() {
   BGM.pause();
   ShellGame.stop();
+  _savedLevel = LevelSystem.currentLevel;
   LevelSystem.stop();
   const scoreEl = document.getElementById("gameoverScore");
   if (scoreEl) scoreEl.textContent = `SCORE: ${Score.current}`;
 
-  // 리워드 버튼 활성화
+  // 리워드 버튼: 이미 사용했으면 숨김
   const rewardBtn = document.getElementById("rewardAdBtn");
-  if (rewardBtn) rewardBtn.disabled = false;
+  if (rewardBtn) {
+    rewardBtn.disabled = false;
+    rewardBtn.style.display = _adUsed ? "none" : "";
+  }
 
   const overlay = document.getElementById("gameoverOverlay");
   overlay.style.display = "flex";
@@ -37,6 +44,8 @@ async function startGame() {
   const gameScreen = document.getElementById("gameScreen");
 
   IntroMusic.stop();
+  Ads.hideBanner();
+  _adUsed = false;
   await BGM.start();
   await PopSFX.init();
 
@@ -192,6 +201,7 @@ function goHome() {
 
   document.getElementById("introLayer").classList.remove("fade-out");
   IntroMusic.play();
+  Ads.resumeBanner();
 }
 
 // ─── 이벤트 바인딩 ───
@@ -232,6 +242,7 @@ document
     gameScreen.style.opacity = "0";
     document.getElementById("introLayer").classList.remove("fade-out");
     IntroMusic.play();
+    Ads.resumeBanner();
   });
 
 document
@@ -243,13 +254,26 @@ document
   .addEventListener("click", async () => {
     const btn = document.getElementById("rewardAdBtn");
     btn.disabled = true;
+    const rewarded = await Ads.showRewarded();
+    if (!rewarded) {
+      btn.disabled = false;
+      return;
+    }
+    _adUsed = true;
     await Leaderboard.cancelScore();
-    HP.gain();
+    HP.init();
     hideGameover();
-    BGM.stop();
-    ShellGame.stop();
-    LevelSystem.stop();
-    await startGame();
+    await BGM.start();
+    await PopSFX.init();
+    setTimeout(() => {
+      const measureSec = Tone.Time("1m").toSeconds();
+      const nowSec = Tone.Transport.seconds;
+      const startSec = (Math.floor(nowSec / measureSec) + 1) * measureSec;
+      LevelSystem.currentLevel = _savedLevel;
+      LevelSystem.barCount = 0;
+      ShellGame.start(startSec, _savedLevel);
+      LevelSystem.start(startSec);
+    }, 300);
   });
 
 // ─── 인트로 음악 ───
