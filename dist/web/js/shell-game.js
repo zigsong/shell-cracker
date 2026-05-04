@@ -6,7 +6,7 @@ const ShellGame = {
   spawnSequence: null,
   running: false,
   hitZoneSize: 60, // 시각 하이라이트 및 자동 miss 판정용 ±px
-  hitWindow: 0.1, // fraction 기준 ±10% 이내만 hit 인정 (travelBeats=4 기준 ±0.4박 ≈ ±188ms)
+  hitWindow: 0.07, // fraction 기준 ±7% 이내만 hit 인정 (travelBeats=4 기준 ±0.28박 ≈ ±188ms)
   travelBeats: 4,
   travelDist: 0,
   spawnFrozenUntilTick: 0, // 레벨업 시 첫 마디 스폰 금지
@@ -15,38 +15,63 @@ const ShellGame = {
   expectedShellsThisLevel: 0,
 
   // 레벨별 스폰 패턴 ("4n" 기준, 8스텝 = 2마디 루프)
-  // Phase1(인덱스 0~3, 첫 마디)에만 스폰 → Phase2(인덱스 4~7)는 모두 null
-  // 스폰된 조개는 4비트 후(Phase2 시작)에 pop → 유저가 Phase2에서 hit
+  // Phase1(인덱스 0~3)에만 스폰 → Phase2(인덱스 4~7)는 모두 null
+  // 레벨 21부터는 _generatePattern()으로 동적 생성
   LEVEL_PATTERNS: [
-    null, // 0: 미사용
-    [1, 1, 1, 1, null, null, null, null], // 1: 4박 정박
-    [1, null, 1, null, null, null, null, null], // 2: 1·3박
-    [[1, 1], null, null, null, null, null, null, null], // 3: 8분 연타
-    [1, null, 1, 1, null, null, null, null], // 4: 1·3·4박
-    [[1, 1, 1], null, null, null, null, null, null, null], // 5: 셋잇단
-    [1, 1, null, 1, null, null, null, null], // 6: 갤로핑
-    [[1, null, 1], null, [1, 1], null, null, null, null, null], // 7: 싱코+연타
-    [[1, 1, null, 1], null, null, null, null, null, null, null], // 8: 갤로핑 리듬
-    [[1, null, 1, null, 1], null, null, null, null, null, null, null], // 9: 5분할
-    [[1, 1], null, [1, null, 1], null, null, null, null, null], // 10: 복합
-    [[1, 1], null, [1, 1, 1], null, null, null, null, null], // 11: 쌍+삼연음
-    [[1, 1, 1], null, [1, 1, 1], null, null, null, null, null], // 12: 더블 삼연음
-    [1, [1, 1], 1, null, null, null, null, null], // 13: 분산 혼합
-    [[1, null, 1], [1, null, 1], null, null, null, null, null, null], // 14: 싱코 반복
-    [[1, 1, null, 1], null, [1, 1], null, null, null, null, null], // 15: 갤로핑+쌍
-    [[1, 1, 1, 1], null, null, null, null, null, null, null], // 16: 16분 연속
-    [1, [1, 1], [1, null, 1], null, null, null, null, null], // 17: 혼합 박자
-    [[1, null, 1, 1], [1, null, 1], null, null, null, null, null, null], // 18: 복잡한 분산
-    [[1, 1, 1], [null, 1, 1], null, null, null, null, null, null], // 19: 연음 이어지기
-    [[1, 1], [1, null, 1], null, [1, 1], null, null, null, null], // 20: 전박 분산
+    null,                                                                         // 0: 미사용
+    [1, 1, 1, 1, null, null, null, null],                                        // 1: 4정박
+    [[1, 1, 1], null, null, null, null, null, null, null],                       // 2: 셋잇단
+    [1, 1, null, 1, null, null, null, null],                                     // 3: 갤로핑
+    [[1, null, 1], null, [1, 1], null, null, null, null, null],                  // 4: 싱코+연타
+    [[1, 1, null, 1], null, null, null, null, null, null, null],                 // 5: 갤로핑 리듬
+    [[1, null, 1, null, 1], null, null, null, null, null, null, null],           // 6: 5분할
+    [[1, 1], null, [1, null, 1], null, null, null, null, null],                  // 7: 복합
+    [[1, 1], null, [1, 1, 1], null, null, null, null, null],                     // 8: 쌍+삼연음
+    [[1, 1, 1], null, [1, 1, 1], null, null, null, null, null],                  // 9: 더블 삼연음
+    [1, [1, 1], 1, null, null, null, null, null],                                // 10: 분산 혼합
+    [[1, null, 1], [1, null, 1], null, null, null, null, null, null],            // 11: 싱코 반복
+    [[1, 1, null, 1], null, [1, 1], null, null, null, null, null],               // 12: 갤로핑+쌍
+    [[1, 1, 1, 1], null, null, null, null, null, null, null],                    // 13: 16분 연속
+    [1, [1, 1], [1, null, 1], null, null, null, null, null],                     // 14: 혼합 박자
+    [[1, null, 1, 1], [1, null, 1], null, null, null, null, null, null],         // 15: 복잡한 분산
+    [[1, 1, 1], [null, 1, 1], null, null, null, null, null, null],               // 16: 연음 이어지기
+    [[1, 1], [1, null, 1], null, [1, 1], null, null, null, null],                // 17: 전박 분산
+    [[1, 1, 1, 1], null, [1, 1, 1], null, null, null, null, null],               // 18: 16분+삼연음
+    [[1, 1, 1], [1, null, 1], null, [1, 1], null, null, null, null],             // 19: 삼연음+복합
+    [[1, 1, 1, 1], [1, null, 1], null, [1, 1, 1], null, null, null, null],       // 20: 최고밀도
   ],
 
-  // 레벨 → 패턴 (레벨 21부터는 10~20 순환)
+  // 레벨 기반 결정적 난수 (같은 레벨은 항상 같은 패턴)
+  _seededRand(level, index) {
+    let h = (level * 2246822519 + index * 3266489917 + 374761393) >>> 0;
+    h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; h ^= h >>> 13;
+    h = Math.imul(h, 3266489917) >>> 0; h ^= h >>> 16;
+    return (h >>> 0) / 0x100000000;
+  },
+
+  // 레벨 21부터 동적 패턴 생성 (무한 확장, 매 5레벨마다 티어 상승)
+  _generatePattern(level) {
+    const rand = (i) => this._seededRand(level, i);
+    const pattern = [null, null, null, null, null, null, null, null];
+    const tier = Math.min(4, Math.floor((level - 21) / 5));
+    const SUBS = [
+      [[1, 1, 1], [1, null, 1, 1], [1, 1, null, 1]],
+      [[1, 1, 1], [1, 1, null, 1], [1, 1, 1, 1]],
+      [[1, 1, 1, 1], [1, null, 1, 1], [1, 1, null, 1]],
+      [[1, 1, 1, 1], [1, null, 1, null, 1], [1, 1, null, 1]],
+      [[1, 1, 1, 1], [1, null, 1, null, 1], [1, 1, 1, null, 1]],
+    ];
+    const available = SUBS[tier];
+    for (let i = 0; i < 4; i++) {
+      pattern[i] = available[Math.floor(rand(i) * available.length)].slice();
+    }
+    return pattern;
+  },
+
+  // 레벨 → 패턴
   _getPattern(level) {
-    if (level < this.LEVEL_PATTERNS.length)
-      return this.LEVEL_PATTERNS[level];
-    const hard = this.LEVEL_PATTERNS.slice(10);
-    return hard[(level - 10) % hard.length];
+    if (level < this.LEVEL_PATTERNS.length) return this.LEVEL_PATTERNS[level];
+    return this._generatePattern(level);
   },
 
   start(seqStart = 0) {
@@ -245,7 +270,6 @@ const ShellGame = {
 
   openShell(shell) {
     SFX.play("hit");
-    HP.gain();
     Score.addHit();
     if (window.__AIT__?.generateHapticFeedback) {
       window.__AIT__.generateHapticFeedback({ type: "tickWeak" });

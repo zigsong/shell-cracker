@@ -9,9 +9,9 @@ var global = typeof globalThis !== 'undefined' ? globalThis : typeof global !== 
     host: ''
   };
   global.__appsInToss = {
-    deploymentId: "019dcf0b-66ec-7519-94ab-ddce129f02f6",
-    brandDisplayName: "shell-cracker",
-    brandPrimaryColor: "#3182F6",
+    deploymentId: "019de25b-57d3-7c48-9881-902245929b16",
+    brandDisplayName: "\uC218\uB2EC\uC758 \uC870\uAC1C\uAE68\uAE30",
+    brandPrimaryColor: "#ffffff",
     brandIcon: "./images/app_icon_radius_0.png",
     webViewType: "partner",
     navigationBar: "{\"withBackButton\":true,\"withHomeButton\":false}"
@@ -132,9 +132,9 @@ if (global.__MICRO_FRONTEND__ == null) {
     host: ''
   };
   global.__appsInToss = {
-    deploymentId: "019dcf0b-66ec-7519-94ab-ddce129f02f6",
-    brandDisplayName: "shell-cracker",
-    brandPrimaryColor: "#3182F6",
+    deploymentId: "019de25b-57d3-7c48-9881-902245929b16",
+    brandDisplayName: "\uC218\uB2EC\uC758 \uC870\uAC1C\uAE68\uAE30",
+    brandPrimaryColor: "#ffffff",
     brandIcon: "./images/app_icon_radius_0.png",
     webViewType: "partner",
     navigationBar: "{\"withBackButton\":true,\"withHomeButton\":false}"
