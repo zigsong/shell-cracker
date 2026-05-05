@@ -1,6 +1,6 @@
 const Ads = {
-  _AIT_BANNER_ID: 'ait-ad-test-banner-id',
-  _AIT_REWARDED_ID: 'ait-ad-test-rewarded-id',
+  _AIT_BANNER_ID: 'ait.v2.live.03eedeea76004935',
+  _AIT_REWARDED_ID: 'ait.v2.live.8ce0789a13fd4caf',
   _ADMOB_BANNER_ID: 'ca-app-pub-6333702424406257/7254375923',
   _ADMOB_REWARDED_ID: 'ca-app-pub-6333702424406257/8739894162',
 
