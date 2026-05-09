@@ -50,7 +50,20 @@ const Ads = {
   _initTossAds() {
     const TossAds = window.__AIT__?.TossAds;
     if (!TossAds?.initialize?.isSupported?.()) return;
-    TossAds.initialize({ callbacks: { onInitialized: () => {} } });
+    TossAds.initialize({
+      callbacks: {
+        onInitialized: () => {
+          const { loadFullScreenAd } = window.__AIT__ || {};
+          if (loadFullScreenAd?.isSupported?.()) {
+            loadFullScreenAd({
+              options: { adGroupId: this._AIT_REWARDED_ID },
+              onEvent: () => {},
+              onError: () => {},
+            });
+          }
+        },
+      },
+    });
   },
 
   _showAITBanner() {

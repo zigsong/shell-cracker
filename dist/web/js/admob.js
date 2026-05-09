@@ -1,6 +1,6 @@
 const Ads = {
-  _AIT_BANNER_ID: "ait-ad-test-banner-id",
-  _AIT_REWARDED_ID: "ait-ad-test-rewarded-id",
+  _AIT_BANNER_ID: "ait.v2.live.03eedeea76004935",
+  _AIT_REWARDED_ID: "ait.v2.live.8ce0789a13fd4caf",
   _ADMOB_BANNER_ID: "ca-app-pub-6333702424406257/7254375923",
   _ADMOB_REWARDED_ID: "ca-app-pub-6333702424406257/8739894162",
 
@@ -55,7 +55,20 @@ const Ads = {
   _initTossAds() {
     const TossAds = window.__AIT__?.TossAds;
     if (!TossAds?.initialize?.isSupported?.()) return;
-    TossAds.initialize({ callbacks: { onInitialized: () => {} } });
+    TossAds.initialize({
+      callbacks: {
+        onInitialized: () => {
+          const { loadFullScreenAd } = window.__AIT__ || {};
+          if (loadFullScreenAd?.isSupported?.()) {
+            loadFullScreenAd({
+              options: { adGroupId: this._AIT_REWARDED_ID },
+              onEvent: () => {},
+              onError: () => {},
+            });
+          }
+        },
+      },
+    });
   },
 
   _showAITBanner() {
@@ -94,12 +107,22 @@ const Ads = {
         resolve(true);
         return;
       }
+      let settled = false;
       let rewarded = false;
+      const done = (val) => {
+        if (settled) return;
+        settled = true;
+        resolve(val);
+      };
+
+      const timer = setTimeout(() => done(true), 15000);
+
       showFullScreenAd({
         options: { adGroupId: this._AIT_REWARDED_ID },
         onEvent: (e) => {
           if (e.type === "userEarnedReward") rewarded = true;
           if (e.type === "dismissed") {
+            clearTimeout(timer);
             if (loadFullScreenAd?.isSupported?.()) {
               loadFullScreenAd({
                 options: { adGroupId: this._AIT_REWARDED_ID },
@@ -107,11 +130,17 @@ const Ads = {
                 onError: () => {},
               });
             }
-            resolve(rewarded);
+            done(rewarded);
           }
-          if (e.type === "failedToShow") resolve(false);
+          if (e.type === "failedToShow") {
+            clearTimeout(timer);
+            done(true);
+          }
         },
-        onError: () => resolve(false),
+        onError: () => {
+          clearTimeout(timer);
+          done(true);
+        },
       });
     });
   },
@@ -121,7 +150,10 @@ const Ads = {
     const AdMob = window.Capacitor?.Plugins?.AdMob;
     if (!AdMob || this._admobInitialized) return;
     try {
-      await AdMob.initialize({ requestTrackingAuthorization: true });
+      await AdMob.initialize({
+        requestTrackingAuthorization: true,
+        testingDevices: ["simulator"],
+      });
       this._admobInitialized = true;
     } catch (e) {
       console.error("AdMob init error:", e);
@@ -149,7 +181,13 @@ const Ads = {
     const AdMob = window.Capacitor?.Plugins?.AdMob;
     if (!AdMob) return true;
     try {
-      await AdMob.prepareRewardVideoAd({ adId: this._ADMOB_REWARDED_ID });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("ad load timeout")), 10000),
+      );
+      await Promise.race([
+        AdMob.prepareRewardVideoAd({ adId: this._ADMOB_REWARDED_ID }),
+        timeout,
+      ]);
       return new Promise((resolve) => {
         let rewarded = false;
         let rl, dl;

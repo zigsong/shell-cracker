@@ -11,6 +11,10 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0
+    },
+    "AdMob": {
+      "appId": "ca-app-pub-6333702424406257~2955395696",
+      "requestTrackingAuthorization": true
     }
   }
 }

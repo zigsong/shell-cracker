@@ -290,7 +290,16 @@ const IntroMusic = {
   },
 
   play() {
-    this._get().play().catch(() => {});
+    const audio = this._get();
+    const p = audio.play();
+    if (p !== undefined) {
+      p.catch(() => {
+        // 오토플레이 차단 시 첫 상호작용(어디든)에서 재생
+        const unlock = () => audio.play().catch(() => {});
+        document.addEventListener("touchstart", unlock, { once: true });
+        document.addEventListener("click", unlock, { once: true });
+      });
+    }
   },
 
   stop() {
@@ -301,10 +310,4 @@ const IntroMusic = {
   },
 };
 
-// 인트로 화면 첫 터치/클릭 시 음악 시작 (모바일 autoplay 정책 우회)
-document.getElementById("introLayer").addEventListener(
-  "touchstart",
-  () => IntroMusic.play(),
-  { once: true }
-);
 IntroMusic.play();
